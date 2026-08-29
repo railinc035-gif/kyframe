@@ -103,31 +103,8 @@
       </div>
     </header>
 
-    <!-- Gallery Toolbar -->
-    <div class="gallery-toolbar">
-      <div class="search-box">
-        <svg viewBox="0 0 24 24"><use href="#icon-search"/></svg>
-        <input type="text" id="project-search-input" placeholder="Buscar proyectos...">
-      </div>
-      <div class="sort-box">
-        <select id="project-sort-select">
-          <option value="recent">Recientes</option>
-          <option value="name">Nombre</option>
-          <option value="frames">Frames</option>
-        </select>
-      </div>
-      <div class="view-toggle">
-        <button id="btn-view-grid" class="icon-btn active" title="Vista cuadrícula">
-          <svg viewBox="0 0 24 24"><use href="#icon-grid"/></svg>
-        </button>
-        <button id="btn-view-list" class="icon-btn" title="Vista lista">
-          <svg viewBox="0 0 24 24"><use href="#icon-list"/></svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Projects Grid/List Container -->
-    <main class="projects-container grid-view" id="projects-container">
+    <!-- Projects List Container -->
+    <main class="projects-container list-view" id="projects-container">
       <!-- "NUEVO PROYECTO" Action Card -->
       <div class="project-card new-project-card" id="btn-open-new-project-modal">
         <div class="new-project-icon">
@@ -151,6 +128,7 @@
       <div class="tool-settings-bar">
         <div class="setting-group">
           <label>TAMAÑO</label>
+          <div id="brush-size-bubble" style="width:16px; height:16px; border-radius:50%; background:var(--accent); border:1px solid #fff; flex-shrink:0;"></div>
           <input type="range" id="brush-size-slider" min="1" max="100" value="8">
           <span id="brush-size-val">8 px</span>
         </div>
@@ -179,6 +157,10 @@
 
       <!-- Left Vertical Scrollable Toolbar -->
       <aside class="vertical-toolbar" id="vertical-toolbar">
+        <button class="tool-btn" data-tool="transform" title="Transformar">
+          <svg viewBox="0 0 24 24"><use href="#icon-transform"/></svg>
+          <span class="tool-label">Transformar</span>
+        </button>
         <button class="tool-btn active" id="btn-tool-brush" data-tool="brush" title="Pinceles">
           <svg viewBox="0 0 24 24"><use href="#icon-brush"/></svg>
           <span class="tool-label">Pincel</span>
@@ -203,20 +185,17 @@
           <svg viewBox="0 0 24 24"><use href="#icon-select"/></svg>
           <span class="tool-label">Selección</span>
         </button>
-        <button class="tool-btn" data-tool="transform" title="Transformar">
-          <svg viewBox="0 0 24 24"><use href="#icon-transform"/></svg>
-          <span class="tool-label">Transformar</span>
-        </button>
-        <hr class="toolbar-divider">
-        <button class="tool-btn" id="btn-undo" title="Deshacer">
-          <svg viewBox="0 0 24 24"><use href="#icon-undo"/></svg>
-          <span class="tool-label">Deshacer</span>
-        </button>
-        <button class="tool-btn" id="btn-redo" title="Rehacer">
-          <svg viewBox="0 0 24 24"><use href="#icon-redo"/></svg>
-          <span class="tool-label">Rehacer</span>
-        </button>
       </aside>
+
+      <!-- Floating Independent Undo / Redo Buttons -->
+      <div class="floating-history-controls">
+        <button class="icon-btn floating-btn" id="btn-undo" title="Deshacer">
+          <svg viewBox="0 0 24 24"><use href="#icon-undo"/></svg>
+        </button>
+        <button class="icon-btn floating-btn" id="btn-redo" title="Rehacer">
+          <svg viewBox="0 0 24 24"><use href="#icon-redo"/></svg>
+        </button>
+      </div>
 
       <!-- Center Viewport (Canvas Container) -->
       <div class="canvas-viewport" id="canvas-viewport">
@@ -449,6 +428,7 @@
           <div class="tab-content" id="tab-atajos">
             <h3>Atajos de Teclado</h3>
             <p><strong>B:</strong> Pincel | <strong>E:</strong> Goma | <strong>F:</strong> Relleno</p>
+            <p><strong>T:</strong> Transformar | <strong>S:</strong> Selección | <strong>C:</strong> Color</p>
             <p><strong>Ctrl + Z:</strong> Deshacer | <strong>Ctrl + Y:</strong> Rehacer</p>
             <p><strong>Espacio:</strong> Reproducir / Pausar</p>
           </div>
@@ -456,7 +436,7 @@
             <h3>Tema Visual</h3>
             <div class="form-group">
               <select id="theme-select" class="form-control" style="width:100%; padding:8px; border-radius:8px; background:var(--bg-secondary); color:#fff; border:1px solid var(--border-color);">
-                <option value="dark-orange" selected>Krita Oscuro + Naranja KYFRAME</option>
+                <option value="dark-orange" selected>KYFRAME Oscuro + Naranja Studio</option>
                 <option value="dark-blue">Modo Oscuro Azul Studio</option>
                 <option value="monochrome">Gris Grafito Minimalista</option>
               </select>
@@ -472,35 +452,41 @@
               <span>Modo táctil móvil</span>
               <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
             </div>
+            <div style="margin-top:16px; text-align:right;">
+              <button class="btn secondary" id="btn-cancel-settings">Cancelar</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal 4: Exportación -->
+  <!-- Modal 4: Exportación e Importación -->
   <div id="modal-export" class="modal-backdrop">
     <div class="modal-card">
       <div class="modal-header">
-        <h2>EXPORTAR PROYECTO</h2>
+        <h2>EXPORTAR E IMPORTAR</h2>
       </div>
       <div class="modal-body">
         <div class="export-options-list">
+          <button id="btn-export-mp4" class="btn primary full-width">
+            Exportar Video Animación (MP4)
+          </button>
+          <button id="btn-export-gif" class="btn secondary full-width">
+            Exportar GIF Animado
+          </button>
           <button id="btn-export-png-frame" class="btn secondary full-width">
             Exportar Frame Actual (PNG)
           </button>
           <button id="btn-export-png-seq" class="btn secondary full-width">
             Exportar Secuencia PNG (ZIP)
           </button>
-          <button id="btn-export-gif" class="btn primary full-width">
-            Exportar Animación (GIF)
-          </button>
           <hr class="modal-divider">
           <button id="btn-export-project-file" class="btn secondary full-width">
-            Guardar Archivo de Proyecto (.kyframe)
+            Exportar Archivo de Proyecto (.kyframe)
           </button>
-          <label class="btn secondary full-width file-input-wrapper">
-            Cargar Archivo de Proyecto (.kyframe)
+          <label class="btn primary full-width file-input-wrapper" style="text-align:center; cursor:pointer;">
+            Importar Archivo de Proyecto (.kyframe)
             <input type="file" id="input-import-project" accept=".kyframe,.json" style="display:none;">
           </label>
         </div>
@@ -725,33 +711,33 @@
       },
 
       bindEvents() {
-        // Search & Sort & View Toggle
-        document.getElementById('project-search-input').addEventListener('input', (e) => {
+        // Search & Sort & View Toggle (Optional null-safe)
+        document.getElementById('project-search-input')?.addEventListener('input', (e) => {
           App.searchQuery = e.target.value.toLowerCase();
           this.renderProjects();
         });
 
-        document.getElementById('project-sort-select').addEventListener('change', (e) => {
+        document.getElementById('project-sort-select')?.addEventListener('change', (e) => {
           App.sortBy = e.target.value;
           this.renderProjects();
         });
 
-        document.getElementById('btn-view-grid').addEventListener('click', () => {
+        document.getElementById('btn-view-grid')?.addEventListener('click', () => {
           App.viewMode = 'grid';
-          document.getElementById('btn-view-grid').classList.add('active');
-          document.getElementById('btn-view-list').classList.remove('active');
+          document.getElementById('btn-view-grid')?.classList.add('active');
+          document.getElementById('btn-view-list')?.classList.remove('active');
           const container = document.getElementById('projects-container');
-          container.classList.add('grid-view');
-          container.classList.remove('list-view');
+          container?.classList.add('grid-view');
+          container?.classList.remove('list-view');
         });
 
-        document.getElementById('btn-view-list').addEventListener('click', () => {
+        document.getElementById('btn-view-list')?.addEventListener('click', () => {
           App.viewMode = 'list';
-          document.getElementById('btn-view-list').classList.add('active');
-          document.getElementById('btn-view-grid').classList.remove('active');
+          document.getElementById('btn-view-list')?.classList.add('active');
+          document.getElementById('btn-view-grid')?.classList.remove('active');
           const container = document.getElementById('projects-container');
-          container.classList.add('list-view');
-          container.classList.remove('grid-view');
+          container?.classList.add('list-view');
+          container?.classList.remove('grid-view');
         });
 
         // New Project Modal
@@ -924,6 +910,7 @@
         const fps = parseInt(fpsInput.value) || 12;
 
         const layer1Id = 'layer_' + Date.now();
+        const defaultFrameCount = 50;
         const project = {
           id: 'proj_' + Date.now(),
           name: name,
@@ -932,14 +919,13 @@
           fps: fps,
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          frameCount: 1,
+          frameCount: defaultFrameCount,
           thumbnail: null,
           layers: [
             { id: layer1Id, name: 'Capa 1', visible: true, locked: false, opacity: 1.0, blendMode: 'source-over' }
           ],
-          // Data structure: framesData[layerId][frameIndex] = dataURL string
           framesData: {
-            [layer1Id]: [null]
+            [layer1Id]: new Array(defaultFrameCount).fill(null)
           }
         };
 
@@ -1067,15 +1053,34 @@
         // Pan & Zoom with Mouse Wheel & Touch Gestures
         viewport.addEventListener('wheel', (e) => {
           e.preventDefault();
-          if (e.ctrlKey || e.metaKey) {
-            const zoomDelta = e.deltaY < 0 ? 1.1 : 0.9;
-            App.zoom = Math.max(0.1, Math.min(10, App.zoom * zoomDelta));
-          } else {
-            App.panX -= e.deltaX;
-            App.panY -= e.deltaY;
-          }
+          const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+          App.zoom = Math.max(0.1, Math.min(10, App.zoom * zoomFactor));
           this.updateTransform();
         }, { passive: false });
+
+        // Touch Pinch Zoom Handler
+        let initialPinchDist = 0;
+        let initialZoom = 1;
+        viewport.addEventListener('touchstart', (e) => {
+          if (e.touches.length === 2) {
+            initialPinchDist = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+            );
+            initialZoom = App.zoom;
+          }
+        }, { passive: true });
+
+        viewport.addEventListener('touchmove', (e) => {
+          if (e.touches.length === 2 && initialPinchDist > 0) {
+            const dist = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+            );
+            App.zoom = Math.max(0.1, Math.min(10, initialZoom * (dist / initialPinchDist)));
+            this.updateTransform();
+          }
+        }, { passive: true });
       },
 
       getCanvasCoordinates(e) {
@@ -1117,6 +1122,18 @@
           return;
         }
 
+        if (App.currentTool === 'select') {
+          this.isSelecting = true;
+          this.selectStart = coords;
+          return;
+        }
+
+        if (App.currentTool === 'transform') {
+          this.isTransforming = true;
+          this.transformStart = { x: e.clientX, y: e.clientY };
+          return;
+        }
+
         if (App.currentTool === 'brush' || App.currentTool === 'eraser') {
           Editor.saveHistoryState();
           // Prepare main canvas with ONLY active layer's content before stroke
@@ -1140,6 +1157,27 @@
           return;
         }
 
+        if (this.isSelecting) {
+          const coords = this.getCanvasCoordinates(e);
+          this.clearGhost();
+          this.ghostCtx.setLineDash([6, 6]);
+          this.ghostCtx.strokeStyle = '#f05a28';
+          this.ghostCtx.lineWidth = 2;
+          this.ghostCtx.strokeRect(this.selectStart.x, this.selectStart.y, coords.x - this.selectStart.x, coords.y - this.selectStart.y);
+          this.ghostCtx.setLineDash([]);
+          return;
+        }
+
+        if (this.isTransforming) {
+          const dx = e.clientX - this.transformStart.x;
+          const dy = e.clientY - this.transformStart.y;
+          App.panX += dx;
+          App.panY += dy;
+          this.transformStart = { x: e.clientX, y: e.clientY };
+          this.updateTransform();
+          return;
+        }
+
         if (!this.isDrawing) return;
 
         const rawCoords = this.getCanvasCoordinates(e);
@@ -1155,6 +1193,14 @@
       onPointerUp(e) {
         if (App.isPanning) {
           App.isPanning = false;
+        }
+
+        if (this.isSelecting) {
+          this.isSelecting = false;
+        }
+
+        if (this.isTransforming) {
+          this.isTransforming = false;
         }
 
         if (this.isDrawing) {
@@ -1193,8 +1239,10 @@
         if (px[3] > 0) {
           const hex = `#${((1 << 24) + (px[0] << 16) + (px[1] << 8) + px[2]).toString(16).slice(1)}`;
           App.currentColor = hex;
-          document.getElementById('color-input').value = hex;
-          document.getElementById('color-preview').style.backgroundColor = hex;
+          const colorInput = document.getElementById('color-input');
+          if (colorInput) colorInput.value = hex;
+          const colorPreview = document.getElementById('color-preview');
+          if (colorPreview) colorPreview.style.backgroundColor = hex;
         }
       },
 
@@ -1297,12 +1345,18 @@
           document.getElementById('modal-color-picker').classList.remove('active');
         });
 
-        // Brush Sliders
+        // Brush Sliders & Dynamic Size Bubble
         const sizeSlider = document.getElementById('brush-size-slider');
         const sizeVal = document.getElementById('brush-size-val');
+        const sizeBubble = document.getElementById('brush-size-bubble');
         sizeSlider.addEventListener('input', (e) => {
           App.brushSize = parseInt(e.target.value);
           sizeVal.textContent = `${App.brushSize} px`;
+          if (sizeBubble) {
+            const diam = Math.max(6, Math.min(32, App.brushSize));
+            sizeBubble.style.width = `${diam}px`;
+            sizeBubble.style.height = `${diam}px`;
+          }
         });
 
         const opacitySlider = document.getElementById('brush-opacity-slider');
@@ -1452,6 +1506,7 @@
           document.getElementById('modal-export').classList.remove('active');
         });
 
+        document.getElementById('btn-export-mp4')?.addEventListener('click', () => this.exportVideoMP4());
         document.getElementById('btn-export-png-frame').addEventListener('click', () => this.exportCurrentFramePNG());
         document.getElementById('btn-export-png-seq').addEventListener('click', () => this.exportPNGSequence());
         document.getElementById('btn-export-gif').addEventListener('click', () => this.exportGIF());
@@ -1761,6 +1816,8 @@
         const wheelCanvas = document.getElementById('ibis-color-wheel');
         const wctx = wheelCanvas.getContext('2d');
         const cx = 110, cy = 110, outerR = 100, innerR = 75;
+        let currentHue = 0;
+        let isDraggingWheel = false;
 
         const drawWheel = () => {
           wctx.clearRect(0, 0, 220, 220);
@@ -1776,6 +1833,16 @@
             wctx.fill();
           }
 
+          // Draw Outer Ring Indicator Handle (Ball 1)
+          const hRad = currentHue * Math.PI / 180;
+          const hx = cx + Math.cos(hRad) * ((outerR + innerR) / 2);
+          const hy = cy + Math.sin(hRad) * ((outerR + innerR) / 2);
+          wctx.beginPath();
+          wctx.arc(hx, hy, 8, 0, Math.PI * 2);
+          wctx.strokeStyle = '#ffffff';
+          wctx.lineWidth = 3;
+          wctx.stroke();
+
           // Draw HSV Diamond in Center
           wctx.save();
           wctx.translate(cx, cy);
@@ -1785,7 +1852,7 @@
           wctx.rect(-dim/2, -dim/2, dim, dim);
           const gradH = wctx.createLinearGradient(-dim/2, 0, dim/2, 0);
           gradH.addColorStop(0, '#ffffff');
-          gradH.addColorStop(1, App.currentColor || '#ff0000');
+          gradH.addColorStop(1, `hsl(${currentHue}, 100%, 50%)`);
           wctx.fillStyle = gradH;
           wctx.fill();
 
@@ -1794,20 +1861,56 @@
           gradV.addColorStop(1, '#000000');
           wctx.fillStyle = gradV;
           wctx.fill();
+
+          // Draw Center Diamond Indicator Handle (Ball 2)
+          wctx.beginPath();
+          wctx.arc(0, 0, 6, 0, Math.PI * 2);
+          wctx.strokeStyle = '#ffffff';
+          wctx.lineWidth = 2;
+          wctx.stroke();
+
           wctx.restore();
         };
 
         drawWheel();
 
-        // Canvas Click Listener for color picking from wheel
-        wheelCanvas.onclick = (e) => {
+        const pickFromEvent = (e) => {
           const rect = wheelCanvas.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const y = e.clientY - rect.top;
+          const dx = x - cx;
+          const dy = y - cy;
+          const dist = Math.hypot(dx, dy);
+
+          // Outer Hue Ring drag
+          if (dist >= innerR - 10 && dist <= outerR + 10) {
+            let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            if (angle < 0) angle += 360;
+            currentHue = Math.round(angle);
+            drawWheel();
+          }
+
           const px = wctx.getImageData(x, y, 1, 1).data;
           if (px[3] > 0) {
             const hex = `#${((1 << 24) + (px[0] << 16) + (px[1] << 8) + px[2]).toString(16).slice(1)}`;
             this.setAppColor(hex);
+          }
+        };
+
+        wheelCanvas.onpointerdown = (e) => {
+          isDraggingWheel = true;
+          wheelCanvas.setPointerCapture(e.pointerId);
+          pickFromEvent(e);
+        };
+
+        wheelCanvas.onpointermove = (e) => {
+          if (isDraggingWheel) pickFromEvent(e);
+        };
+
+        wheelCanvas.onpointerup = (e) => {
+          if (isDraggingWheel) {
+            isDraggingWheel = false;
+            wheelCanvas.releasePointerCapture(e.pointerId);
             document.getElementById('modal-color-picker').classList.remove('active');
             this.switchToBrushTool();
           }
@@ -2203,6 +2306,63 @@
       },
 
       // --- EXPORT FUNCTIONALITY ---
+      exportVideoMP4() {
+        if (!App.currentProject) return;
+        alert('Grabando animación en formato Video (MP4 / WebM)...');
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = App.currentProject.width;
+        exportCanvas.height = App.currentProject.height;
+        const ectx = exportCanvas.getContext('2d');
+
+        const stream = exportCanvas.captureStream(App.currentProject.fps || 12);
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const chunks = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/mp4' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `${App.currentProject.name}.mp4`;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+        };
+
+        mediaRecorder.start();
+
+        let frame = 0;
+        const interval = setInterval(() => {
+          if (frame >= App.currentProject.frameCount) {
+            clearInterval(interval);
+            mediaRecorder.stop();
+            return;
+          }
+
+          ectx.fillStyle = '#ffffff';
+          ectx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+          App.currentProject.layers.forEach(layer => {
+            if (!layer.visible) return;
+            const exposed = this.getExposedFrameData(layer.id, frame);
+            if (exposed && exposed.data) {
+              const img = new Image();
+              img.src = exposed.data;
+              if (img.complete) {
+                ectx.globalAlpha = layer.opacity;
+                ectx.drawImage(img, 0, 0);
+                ectx.globalAlpha = 1.0;
+              }
+            }
+          });
+
+          frame++;
+        }, 1000 / (App.currentProject.fps || 12));
+      },
+
       exportCurrentFramePNG() {
         const link = document.createElement('a');
         link.download = `${App.currentProject.name}_frame_${App.currentFrameIndex + 1}.png`;

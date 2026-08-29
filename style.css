@@ -512,6 +512,37 @@ button {
   overflow: hidden;
 }
 
+/* Floating Undo / Redo Controls */
+.floating-history-controls {
+  position: absolute;
+  top: 16px;
+  left: 90px;
+  display: flex;
+  gap: 10px;
+  z-index: 20;
+}
+
+.floating-btn {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  background: rgba(22, 22, 26, 0.75) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-btn:hover {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  transform: scale(1.1);
+}
+
 /* Vertical Toolbar - Floating Translucent Round Style */
 .vertical-toolbar {
   width: 64px;
@@ -1123,6 +1154,11 @@ button {
 
 .step-btn:hover {
   background: var(--accent);
+}
+
+select option {
+  background-color: #222226 !important;
+  color: #ffffff !important;
 }
 
 /* ==================== MODAL BACKDROPS & CARDS ==================== */
