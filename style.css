@@ -882,18 +882,41 @@ button {
 
 .frame-cell.has-content::after {
   content: "";
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  background: var(--text-muted);
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #c5c5d0;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+.frame-cell.exposure-hold {
+  background: rgba(240, 90, 40, 0.08);
+}
+
+.frame-cell.exposure-hold::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-light);
+  opacity: 0.7;
 }
 
 .frame-cell.active {
-  background: rgba(92, 106, 196, 0.2);
+  background: rgba(240, 90, 40, 0.25);
+  border-color: var(--accent);
 }
 
 .frame-cell.active.has-content::after {
   background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.frame-cell.dragging {
+  opacity: 0.4;
+  transform: scale(0.9);
 }
 
 /* ==================== MODAL BACKDROPS & CARDS ==================== */

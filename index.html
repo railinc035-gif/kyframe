@@ -1442,16 +1442,26 @@
         this.renderTimeline();
       },
 
+      getExposedFrameData(layerId, frameIndex) {
+        if (!App.currentProject || !App.currentProject.framesData[layerId]) return null;
+        const frames = App.currentProject.framesData[layerId];
+        // Search backwards from frameIndex for latest keyframe
+        for (let i = frameIndex; i >= 0; i--) {
+          if (frames[i]) return { data: frames[i], keyframeIndex: i };
+        }
+        return null;
+      },
+
       renderCurrentFrame() {
         CanvasEngine.clear();
         if (!App.currentProject) return;
 
-        // Composite layers from bottom to top
+        // Composite layers from bottom to top using Krita Exposure Hold
         App.currentProject.layers.forEach(layer => {
           if (!layer.visible) return;
-          const frameData = App.currentProject.framesData[layer.id] ? App.currentProject.framesData[layer.id][App.currentFrameIndex] : null;
+          const exposed = this.getExposedFrameData(layer.id, App.currentFrameIndex);
 
-          if (frameData) {
+          if (exposed && exposed.data) {
             const img = new Image();
             img.onload = () => {
               CanvasEngine.ctx.globalAlpha = layer.opacity;
@@ -1460,7 +1470,7 @@
               CanvasEngine.ctx.globalAlpha = 1.0;
               CanvasEngine.ctx.globalCompositeOperation = 'source-over';
             };
-            img.src = frameData;
+            img.src = exposed.data;
           }
         });
 
@@ -1479,7 +1489,7 @@
           const targetFrame = idx - i;
           if (targetFrame >= 0) {
             const opacity = 0.35 / i;
-            this.renderFrameGhostToContext(targetFrame, opacity, 'rgba(255,0,0,0.5)');
+            this.renderFrameGhost(targetFrame, opacity, 'rgba(255,0,0,0.5)');
           }
         }
 
@@ -1488,24 +1498,24 @@
           const targetFrame = idx + i;
           if (targetFrame < total) {
             const opacity = 0.35 / i;
-            this.renderFrameGhostToContext(targetFrame, opacity, 'rgba(0,255,0,0.5)');
+            this.renderFrameGhost(targetFrame, opacity, 'rgba(0,255,0,0.5)');
           }
         }
       },
 
-      renderFrameGhostToContext(frameIdx, opacity, tintColor) {
+      renderFrameGhost(frameIdx, opacity, tintColor) {
         App.currentProject.layers.forEach(layer => {
           if (!layer.visible) return;
-          const data = App.currentProject.framesData[layer.id] ? App.currentProject.framesData[layer.id][frameIdx] : null;
+          const exposed = this.getExposedFrameData(layer.id, frameIdx);
 
-          if (data) {
+          if (exposed && exposed.data) {
             const img = new Image();
             img.onload = () => {
               CanvasEngine.ghostCtx.globalAlpha = opacity * layer.opacity;
               CanvasEngine.ghostCtx.drawImage(img, 0, 0);
               CanvasEngine.ghostCtx.globalAlpha = 1.0;
             };
-            img.src = data;
+            img.src = exposed.data;
           }
         });
       },
@@ -1692,12 +1702,19 @@
           framesTrack.className = 'track-frames';
 
           const framesList = App.currentProject.framesData[layer.id] || [];
+          let activeKeyframeFound = false;
+
           for (let f = 0; f < App.currentProject.frameCount; f++) {
             const fCell = document.createElement('div');
-            const hasContent = !!framesList[f];
-            fCell.className = `frame-cell ${f === App.currentFrameIndex ? 'active' : ''} ${hasContent ? 'has-content' : ''}`;
+            const isKeyframe = !!framesList[f];
+            if (isKeyframe) activeKeyframeFound = true;
+
+            const isExposureHold = activeKeyframeFound && !isKeyframe;
+
+            fCell.className = `frame-cell ${f === App.currentFrameIndex ? 'active' : ''} ${isKeyframe ? 'has-content' : ''} ${isExposureHold ? 'exposure-hold' : ''}`;
             fCell.dataset.layerId = layer.id;
             fCell.dataset.frameIdx = f;
+            if (isKeyframe) fCell.draggable = true;
 
             fCell.addEventListener('click', () => {
               App.activeLayerId = layer.id;
@@ -1707,6 +1724,33 @@
             fCell.addEventListener('contextmenu', (e) => {
               e.preventDefault();
               this.showFrameContextMenu(e, layer.id, f);
+            });
+
+            // Keyframe Drag and Drop Listeners
+            fCell.addEventListener('dragstart', (e) => {
+              if (!isKeyframe) return;
+              e.dataTransfer.setData('text/plain', JSON.stringify({ layerId: layer.id, fromIdx: f }));
+              fCell.classList.add('dragging');
+            });
+
+            fCell.addEventListener('dragend', () => {
+              fCell.classList.remove('dragging');
+            });
+
+            fCell.addEventListener('dragover', (e) => {
+              e.preventDefault();
+            });
+
+            fCell.addEventListener('drop', (e) => {
+              e.preventDefault();
+              const rawData = e.dataTransfer.getData('text/plain');
+              if (!rawData) return;
+              try {
+                const { layerId: srcLayerId, fromIdx } = JSON.parse(rawData);
+                this.moveKeyframe(srcLayerId, fromIdx, layer.id, f);
+              } catch (err) {
+                console.error(err);
+              }
             });
 
             framesTrack.appendChild(fCell);
@@ -1782,16 +1826,29 @@
         this.renderOnionSkin();
       },
 
+      moveKeyframe(srcLayerId, fromIdx, destLayerId, toIdx) {
+        if (!App.currentProject) return;
+        if (fromIdx === toIdx && srcLayerId === destLayerId) return;
+
+        this.saveHistoryState();
+        const data = App.currentProject.framesData[srcLayerId][fromIdx];
+        App.currentProject.framesData[srcLayerId][fromIdx] = null;
+        App.currentProject.framesData[destLayerId][toIdx] = data;
+
+        this.renderTimeline();
+        this.renderCurrentFrame();
+      },
+
       showFrameContextMenu(e, layerId, frameIdx) {
         const menu = document.getElementById('context-menu');
         menu.style.top = `${e.clientY}px`;
-        menu.style.left = `${Math.min(e.clientX, window.innerWidth - 140)}px`;
+        menu.style.left = `${Math.min(e.clientX, window.innerWidth - 160)}px`;
         menu.innerHTML = `
           <div class="context-menu-item" id="fctx-duplicate">Duplicar Frame</div>
-          <div class="context-menu-item" id="fctx-copy">Copiar</div>
-          <div class="context-menu-item" id="fctx-paste">Pegar</div>
-          <div class="context-menu-item" id="fctx-clear">Limpiar Frame</div>
-          <div class="context-menu-item" id="fctx-delete" style="color:var(--danger)">Eliminar Frame</div>
+          <div class="context-menu-item" id="fctx-copy">Copiar Keyframe</div>
+          <div class="context-menu-item" id="fctx-paste">Pegar Keyframe</div>
+          <div class="context-menu-item" id="fctx-clear">Eliminar Keyframe (Limpiar)</div>
+          <div class="context-menu-item" id="fctx-delete" style="color:var(--danger)">Eliminar Columna de Frame</div>
         `;
         menu.classList.add('active');
 
