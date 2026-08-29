@@ -234,6 +234,16 @@
             <input type="range" id="active-layer-opacity" min="0" max="100" value="100">
             <span id="active-layer-opacity-val">100%</span>
           </div>
+          <div class="form-group" style="margin-top:6px;">
+            <label style="font-size:10px;">Filtro de Capa</label>
+            <select id="layer-filter-select" class="layer-blend-select">
+              <option value="none" selected>Sin Filtro</option>
+              <option value="blur(4px)">Desenfoque</option>
+              <option value="brightness(1.4)">Brillo +40%</option>
+              <option value="contrast(1.5)">Alto Contraste</option>
+              <option value="hue-rotate(180deg)">Invertir Tono (Hue)</option>
+            </select>
+          </div>
           <div class="layer-actions-row">
             <button id="btn-merge-layer" class="btn secondary" title="Fusionar hacia abajo">
               <svg><use href="#icon-merge"/></svg>
@@ -276,6 +286,10 @@
         </div>
 
         <div class="controls-right">
+          <label class="icon-btn" title="Cargar Audio (MP3/WAV)" style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center;">
+            <svg viewBox="0 0 24 24"><use href="#icon-export"/></svg>
+            <input type="file" id="input-audio-track" accept="audio/*" style="display:none;">
+          </label>
           <button id="btn-add-frame" class="icon-btn primary" title="Añadir Frame">
             <svg><use href="#icon-plus"/></svg>
           </button>
@@ -510,16 +524,37 @@
     </div>
   </div>
 
-  <!-- Modal 5: Selector de Pinceles -->
+  <!-- Modal 5: Selector de Pinceles & Creador -->
   <div id="modal-brush-selector" class="modal-backdrop">
     <div class="modal-card modal-large">
       <div class="modal-header">
-        <h2>BIBLIOTECA DE PINCELES</h2>
+        <h2>BIBLIOTECA Y CREADOR DE PINCELES</h2>
         <button id="btn-close-brush-modal" class="icon-btn small">✕</button>
       </div>
       <div class="modal-body">
-        <div class="brush-grid-container" id="brush-presets-grid">
+        <div style="display:flex; gap:10px; margin-bottom:12px;">
+          <button id="tab-brush-preset-lib" class="btn primary half" style="flex:1;">BIBLIOTECA</button>
+          <button id="tab-brush-custom-creator" class="btn secondary half" style="flex:1;">CREAR PINCEL</button>
+        </div>
+
+        <div id="panel-brush-presets" class="brush-grid-container">
           <!-- Populated dynamically from KYFRAME_BRUSHES -->
+        </div>
+
+        <div id="panel-brush-creator" style="display:none; flex-direction:column; gap:10px;">
+          <div class="form-group">
+            <label>Nombre del Pincel</label>
+            <input type="text" id="custom-brush-name" value="Mi Pincel Personalizado" style="width:100%; padding:8px; border-radius:8px; background:var(--bg-secondary); color:#fff; border:1px solid var(--border-color);">
+          </div>
+          <div class="form-group">
+            <label>Dureza: <span id="custom-brush-hardness-val">80%</span></label>
+            <input type="range" id="custom-brush-hardness" min="0" max="100" value="80" style="width:100%;">
+          </div>
+          <div class="form-group">
+            <label>Espaciado: <span id="custom-brush-spacing-val">8%</span></label>
+            <input type="range" id="custom-brush-spacing" min="1" max="50" value="8" style="width:100%;">
+          </div>
+          <button id="btn-save-custom-brush" class="btn primary full-width">GUARDAR EN BIBLIOTECA</button>
         </div>
       </div>
     </div>
@@ -1541,6 +1576,14 @@
           }
         });
 
+        document.getElementById('layer-filter-select')?.addEventListener('change', (e) => {
+          const activeLayer = this.getActiveLayer();
+          if (activeLayer) {
+            activeLayer.filter = e.target.value;
+            this.renderCurrentFrame();
+          }
+        });
+
         document.getElementById('layer-blend-mode-select').addEventListener('change', (e) => {
           const activeLayer = this.getActiveLayer();
           if (activeLayer) {
@@ -1604,6 +1647,42 @@
           }
         });
 
+        // Brush Creator Submenu Switching
+        document.getElementById('tab-brush-preset-lib')?.addEventListener('click', () => {
+          document.getElementById('panel-brush-presets').style.display = 'grid';
+          document.getElementById('panel-brush-creator').style.display = 'none';
+          document.getElementById('tab-brush-preset-lib').className = 'btn primary half';
+          document.getElementById('tab-brush-custom-creator').className = 'btn secondary half';
+        });
+
+        document.getElementById('tab-brush-custom-creator')?.addEventListener('click', () => {
+          document.getElementById('panel-brush-presets').style.display = 'none';
+          document.getElementById('panel-brush-creator').style.display = 'flex';
+          document.getElementById('tab-brush-preset-lib').className = 'btn secondary half';
+          document.getElementById('tab-brush-custom-creator').className = 'btn primary half';
+        });
+
+        document.getElementById('btn-save-custom-brush')?.addEventListener('click', () => {
+          const name = document.getElementById('custom-brush-name').value.trim() || 'Pincel Personalizado';
+          const hardness = parseInt(document.getElementById('custom-brush-hardness').value) / 100;
+          const spacing = parseInt(document.getElementById('custom-brush-spacing').value) / 100;
+          const newId = 'custom_' + Date.now();
+
+          if (window.KYFRAME_BRUSHES) {
+            window.KYFRAME_BRUSHES[newId] = {
+              name: name,
+              category: 'Personalizados',
+              type: 'basic',
+              size: App.brushSize || 10,
+              opacity: App.brushOpacity || 1.0,
+              hardness: hardness,
+              spacing: spacing
+            };
+            alert(`Pincel "${name}" guardado en la biblioteca.`);
+            document.getElementById('modal-brush-selector').classList.remove('active');
+          }
+        });
+
         // Export / Import Tab Category Switching
         document.getElementById('tab-export-category')?.addEventListener('click', () => {
           document.getElementById('section-export-panel').style.display = 'block';
@@ -1617,6 +1696,16 @@
           document.getElementById('section-import-panel').style.display = 'block';
           document.getElementById('tab-export-category').className = 'btn secondary half';
           document.getElementById('tab-import-category').className = 'btn primary half';
+        });
+
+        // Audio Track Import
+        document.getElementById('input-audio-track')?.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            const url = URL.createObjectURL(file);
+            App.audioElement = new Audio(url);
+            alert(`Pista de audio "${file.name}" cargada correctamente.`);
+          }
         });
 
         // Export Modal & Actions
@@ -1766,11 +1855,14 @@
           if (exposed && exposed.data) {
             const img = new Image();
             img.onload = () => {
+              CanvasEngine.ctx.save();
               CanvasEngine.ctx.globalAlpha = layer.opacity;
               CanvasEngine.ctx.globalCompositeOperation = layer.isClipping ? 'source-in' : (layer.blendMode || 'source-over');
+              if (layer.filter && layer.filter !== 'none') {
+                CanvasEngine.ctx.filter = layer.filter;
+              }
               CanvasEngine.ctx.drawImage(img, 0, 0);
-              CanvasEngine.ctx.globalAlpha = 1.0;
-              CanvasEngine.ctx.globalCompositeOperation = 'source-over';
+              CanvasEngine.ctx.restore();
             };
             img.src = exposed.data;
           }
@@ -1891,8 +1983,8 @@
 
       openBrushSelectorModal() {
         const modal = document.getElementById('modal-brush-selector');
-        const grid = document.getElementById('brush-presets-grid');
-        grid.innerHTML = '';
+        const grid = document.getElementById('panel-brush-presets') || document.getElementById('brush-presets-grid');
+        if (grid) grid.innerHTML = '';
 
         const brushesSource = window.KYFRAME_BRUSHES || (typeof KYFRAME_BRUSHES !== 'undefined' ? KYFRAME_BRUSHES : null);
 
