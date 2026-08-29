@@ -1,26 +1,28 @@
 /* ==================== GLOBAL VARIABLES & THEME ==================== */
 :root {
-  --bg-dark: #121316;
-  --bg-card: #1c1e24;
-  --bg-panel: #181a20;
-  --bg-hover: #262932;
-  --bg-input: #2a2d38;
-  --accent: #5c6ac4;
-  --accent-hover: #4d5ab3;
-  --accent-light: #7986cb;
-  --text-main: #f0f2f5;
-  --text-muted: #8c93a0;
-  --border-color: #2e323e;
+  /* Krita Dark & Orange Palette */
+  --bg-dark: #121214;
+  --bg-card: #1d1d21;
+  --bg-panel: #18181b;
+  --bg-hover: #2a2a30;
+  --bg-input: #26262d;
+  --accent: #f05a28;         /* Krita Vibrant Orange */
+  --accent-hover: #d94b1f;   /* Darker Orange */
+  --accent-light: #ff7747;   /* Light Orange */
+  --accent-glow: rgba(240, 90, 40, 0.35);
+  --text-main: #f2f2f5;
+  --text-muted: #9595a0;
+  --border-color: #2d2d35;
   --danger: #e53935;
-  --warning: #fb8c00;
+  --warning: #ff9800;
   --success: #43a047;
   --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
   --radius-full: 9999px;
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s ease;
 }
@@ -179,9 +181,24 @@ button {
 
 /* ==================== SCREEN 1: GALLERY ==================== */
 #gallery-screen {
-  background: radial-gradient(circle at top center, #1f222d 0%, var(--bg-dark) 70%);
+  background: radial-gradient(circle at top center, #2b221c 0%, var(--bg-dark) 75%);
   padding: 20px;
   gap: 16px;
+}
+
+.layer-blend-select {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 11px;
+  outline: none;
+  width: 100%;
+}
+
+.layer-blend-select:focus {
+  border-color: var(--accent);
 }
 
 .gallery-header {

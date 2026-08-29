@@ -242,6 +242,16 @@
           <!-- Layer items inserted dynamically -->
         </div>
         <div class="layers-footer">
+          <div class="form-group" style="margin-bottom:6px;">
+            <label style="font-size:10px;">Modo de Fusión</label>
+            <select id="layer-blend-mode-select" class="layer-blend-select">
+              <option value="source-over">Normal</option>
+              <option value="multiply">Multiplicar</option>
+              <option value="screen">Pantalla</option>
+              <option value="overlay">Superponer</option>
+              <option value="lighter">Añadir / Sobreexponer</option>
+            </select>
+          </div>
           <div class="layer-opacity-control">
             <span>Opacidad</span>
             <input type="range" id="active-layer-opacity" min="0" max="100" value="100">
@@ -798,7 +808,7 @@
           frameCount: 1,
           thumbnail: null,
           layers: [
-            { id: layer1Id, name: 'Capa 1', visible: true, locked: false, opacity: 1.0 }
+            { id: layer1Id, name: 'Capa 1', visible: true, locked: false, opacity: 1.0, blendMode: 'source-over' }
           ],
           // Data structure: framesData[layerId][frameIndex] = dataURL string
           framesData: {
@@ -981,6 +991,9 @@
 
         if (App.currentTool === 'brush' || App.currentTool === 'eraser') {
           Editor.saveHistoryState();
+          // Prepare main canvas with ONLY active layer's content before stroke
+          Editor.prepareActiveLayerCanvas();
+
           this.isDrawing = true;
           this.lastPoint = coords;
 
@@ -1015,6 +1028,7 @@
           this.isDrawing = false;
           this.lastPoint = null;
           Editor.saveCurrentFrameData();
+          Editor.renderCurrentFrame();
         }
       },
 
@@ -1219,6 +1233,14 @@
           }
         });
 
+        document.getElementById('layer-blend-mode-select').addEventListener('change', (e) => {
+          const activeLayer = this.getActiveLayer();
+          if (activeLayer) {
+            activeLayer.blendMode = e.target.value;
+            this.renderCurrentFrame();
+          }
+        });
+
         // Timeline Playback Controls
         document.getElementById('btn-play-pause').addEventListener('click', () => this.togglePlay());
         document.getElementById('btn-prev-frame').addEventListener('click', () => this.stepFrame(-1));
@@ -1334,6 +1356,19 @@
         return App.currentProject.layers.find(l => l.id === App.activeLayerId);
       },
 
+      prepareActiveLayerCanvas() {
+        CanvasEngine.clear();
+        if (!App.currentProject || !App.activeLayerId) return;
+        const frameData = App.currentProject.framesData[App.activeLayerId] ? App.currentProject.framesData[App.activeLayerId][App.currentFrameIndex] : null;
+        if (frameData) {
+          const img = new Image();
+          img.onload = () => {
+            CanvasEngine.ctx.drawImage(img, 0, 0);
+          };
+          img.src = frameData;
+        }
+      },
+
       saveCurrentFrameData() {
         if (!App.currentProject || !App.activeLayerId) return;
 
@@ -1358,8 +1393,10 @@
             const img = new Image();
             img.onload = () => {
               CanvasEngine.ctx.globalAlpha = layer.opacity;
+              CanvasEngine.ctx.globalCompositeOperation = layer.blendMode || 'source-over';
               CanvasEngine.ctx.drawImage(img, 0, 0);
               CanvasEngine.ctx.globalAlpha = 1.0;
+              CanvasEngine.ctx.globalCompositeOperation = 'source-over';
             };
             img.src = frameData;
           }
@@ -1446,6 +1483,7 @@
               const op = Math.round(layer.opacity * 100);
               document.getElementById('active-layer-opacity').value = op;
               document.getElementById('active-layer-opacity-val').textContent = `${op}%`;
+              document.getElementById('layer-blend-mode-select').value = layer.blendMode || 'source-over';
             }
           });
 
