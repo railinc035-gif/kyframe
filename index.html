@@ -179,7 +179,7 @@
 
       <!-- Left Vertical Scrollable Toolbar -->
       <aside class="vertical-toolbar" id="vertical-toolbar">
-        <button class="tool-btn active" data-tool="brush" title="Pincel">
+        <button class="tool-btn active" id="btn-tool-brush" data-tool="brush" title="Pinceles">
           <svg viewBox="0 0 24 24"><use href="#icon-brush"/></svg>
           <span class="tool-label">Pincel</span>
         </button>
@@ -191,11 +191,8 @@
           <svg viewBox="0 0 24 24"><use href="#icon-fill"/></svg>
           <span class="tool-label">Relleno</span>
         </button>
-        <button class="tool-btn" data-tool="color" title="Color">
-          <div class="color-picker-wrapper">
-            <input type="color" id="color-input" value="#000000">
-            <div id="color-preview" class="color-preview-circle"></div>
-          </div>
+        <button class="tool-btn" id="btn-tool-color" data-tool="color" title="Color">
+          <div id="color-preview" class="color-preview-circle"></div>
           <span class="tool-label">Color</span>
         </button>
         <button class="tool-btn" data-tool="picker" title="Selector">
@@ -296,20 +293,7 @@
         </div>
 
         <div class="controls-center">
-          <div class="fps-selector">
-            <select id="fps-select">
-              <option value="6">6 FPS</option>
-              <option value="8">8 FPS</option>
-              <option value="12" selected>12 FPS</option>
-              <option value="15">15 FPS</option>
-              <option value="24">24 FPS</option>
-              <option value="30">30 FPS</option>
-              <option value="60">60 FPS</option>
-            </select>
-          </div>
-          <div class="frame-counter-display">
-            FRAME <span id="current-frame-num">1</span> / <span id="total-frames-num">1</span>
-          </div>
+          <!-- Cleaned up minimalist header without clutter -->
         </div>
 
         <div class="controls-right">
@@ -406,6 +390,23 @@
           </div>
         </div>
         <hr class="modal-divider">
+        <div class="form-group">
+          <label for="fps-select-modal">Velocidad de Animación (FPS)</label>
+          <select id="fps-select-modal" class="form-control" style="width:100%; padding:8px; border-radius:8px; background:var(--bg-secondary); color:#fff; border:1px solid var(--border-color);">
+            <option value="6">6 FPS</option>
+            <option value="8">8 FPS</option>
+            <option value="12" selected>12 FPS</option>
+            <option value="15">15 FPS</option>
+            <option value="24">24 FPS</option>
+            <option value="30">30 FPS</option>
+            <option value="60">60 FPS</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="total-frames-input-modal">Cantidad Total de Frames</label>
+          <input type="number" id="total-frames-input-modal" min="1" max="1000" value="1" style="width:100%; padding:8px; border-radius:8px; background:var(--bg-secondary); color:#fff; border:1px solid var(--border-color);">
+        </div>
+        <hr class="modal-divider">
         <button id="btn-exit-to-gallery" class="btn warning full-width">
           <svg><use href="#icon-arrow-left"/></svg>
           SALIR A LA GALERÍA
@@ -426,74 +427,51 @@
       </div>
       <div class="modal-settings-layout">
         <div class="settings-tabs">
-          <button class="tab-btn active" data-tab="tab-general">General</button>
-          <button class="tab-btn" data-tab="tab-interfaz">Interfaz</button>
-          <button class="tab-btn" data-tab="tab-tema">Tema</button>
-          <button class="tab-btn" data-tab="tab-proyectos">Proyectos</button>
-          <button class="tab-btn" data-tab="tab-lienzo">Lienzo</button>
-          <button class="tab-btn" data-tab="tab-pinceles">Pinceles</button>
-          <button class="tab-btn" data-tab="tab-animacion">Animación</button>
-          <button class="tab-btn" data-tab="tab-exportacion">Exportación</button>
-          <button class="tab-btn" data-tab="tab-rendimiento">Rendimiento</button>
-          <button class="tab-btn" data-tab="tab-guardado">Guardado</button>
+          <button class="tab-btn active" data-tab="tab-idioma">Idioma</button>
           <button class="tab-btn" data-tab="tab-atajos">Atajos</button>
-          <button class="tab-btn" data-tab="tab-idioma">Idioma</button>
+          <button class="tab-btn" data-tab="tab-tema">Tema</button>
+          <button class="tab-btn" data-tab="tab-interfaz">Interfaz</button>
         </div>
         <div class="settings-content">
-          <div class="tab-content active" id="tab-general">
-            <h3>General</h3>
-            <p>KYFRAME STUDIO V1.0</p>
-            <p>Motor de animación 2D frame a frame optimizado para dispositivos móviles y escritorio.</p>
+          <div class="tab-content active" id="tab-idioma">
+            <h3>Idioma / Language</h3>
+            <div class="form-group">
+              <select id="language-select" class="form-control" style="width:100%; padding:8px; border-radius:8px; background:var(--bg-secondary); color:#fff; border:1px solid var(--border-color);">
+                <option value="es" selected>Español (ES)</option>
+                <option value="en">English (US)</option>
+                <option value="fr">Français (FR)</option>
+                <option value="pt">Português (BR)</option>
+                <option value="de">Deutsch (DE)</option>
+                <option value="ja">日本語 (JA)</option>
+              </select>
+            </div>
+          </div>
+          <div class="tab-content" id="tab-atajos">
+            <h3>Atajos de Teclado</h3>
+            <p><strong>B:</strong> Pincel | <strong>E:</strong> Goma | <strong>F:</strong> Relleno</p>
+            <p><strong>Ctrl + Z:</strong> Deshacer | <strong>Ctrl + Y:</strong> Rehacer</p>
+            <p><strong>Espacio:</strong> Reproducir / Pausar</p>
+          </div>
+          <div class="tab-content" id="tab-tema">
+            <h3>Tema Visual</h3>
+            <div class="form-group">
+              <select id="theme-select" class="form-control" style="width:100%; padding:8px; border-radius:8px; background:var(--bg-secondary); color:#fff; border:1px solid var(--border-color);">
+                <option value="dark-orange" selected>Krita Oscuro + Naranja KYFRAME</option>
+                <option value="dark-blue">Modo Oscuro Azul Studio</option>
+                <option value="monochrome">Gris Grafito Minimalista</option>
+              </select>
+            </div>
           </div>
           <div class="tab-content" id="tab-interfaz">
             <h3>Interfaz</h3>
             <div class="toggle-option">
-              <span>Modo compacto móvil</span>
-              <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+              <span>Botones flotantes translúcidos</span>
+              <label class="switch"><input type="checkbox" id="toggle-floating-ui" checked><span class="slider"></span></label>
             </div>
-          </div>
-          <div class="tab-content" id="tab-tema">
-            <h3>Tema</h3>
-            <p>Tema Oscuro KYFRAME (Por defecto)</p>
-          </div>
-          <div class="tab-content" id="tab-proyectos">
-            <h3>Proyectos</h3>
-            <p>Ubicación de datos: Almacenamiento IndexedDB del navegador.</p>
-          </div>
-          <div class="tab-content" id="tab-lienzo">
-            <h3>Lienzo</h3>
-            <p>Color de fondo por defecto: Blanco / Transparente</p>
-          </div>
-          <div class="tab-content" id="tab-pinceles">
-            <h3>Pinceles</h3>
-            <p>Estabilización de trazo activa.</p>
-          </div>
-          <div class="tab-content" id="tab-animacion">
-            <h3>Animación</h3>
-            <p>Reproducción en bucle activada por defecto.</p>
-          </div>
-          <div class="tab-content" id="tab-exportacion">
-            <h3>Exportación</h3>
-            <p>Formatos disponibles: PNG, Secuencia PNG, GIF, Proyecto .kyframe.</p>
-          </div>
-          <div class="tab-content" id="tab-rendimiento">
-            <h3>Rendimiento</h3>
-            <p>Aceleración por Hardware activa.</p>
-          </div>
-          <div class="tab-content" id="tab-guardado">
-            <h3>Guardado</h3>
             <div class="toggle-option">
-              <span>Guardado automático al realizar cambios</span>
+              <span>Modo táctil móvil</span>
               <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
             </div>
-          </div>
-          <div class="tab-content" id="tab-atajos">
-            <h3>Atajos</h3>
-            <p>Ctrl + Z: Deshacer | Ctrl + Y: Rehacer | Espacio: Reproducir</p>
-          </div>
-          <div class="tab-content" id="tab-idioma">
-            <h3>Idioma</h3>
-            <p>Español (ES)</p>
           </div>
         </div>
       </div>
@@ -529,6 +507,96 @@
       </div>
       <div class="modal-footer">
         <button id="btn-close-export-modal" class="btn secondary">CERRAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Selector de Pinceles -->
+  <div id="modal-brush-selector" class="modal-backdrop">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h2>BIBLIOTECA DE PINCELES</h2>
+        <button id="btn-close-brush-modal" class="icon-btn small">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="brush-grid-container" id="brush-presets-grid">
+          <!-- Populated dynamically from KYFRAME_BRUSHES -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 6: Ibis Paint X Style Color Selector -->
+  <div id="modal-color-picker" class="modal-backdrop">
+    <div class="modal-card modal-ibis-color">
+      <div class="modal-header">
+        <h2>COLOR</h2>
+        <button id="btn-close-color-modal" class="icon-btn small">✕</button>
+      </div>
+      <div class="ibis-color-container">
+        <!-- Left: Palette Grid & Swatches -->
+        <div class="ibis-color-left">
+          <div class="palette-swatch-grid" id="ibis-swatch-grid"></div>
+          <div class="recent-swatches-row" id="ibis-recent-swatches"></div>
+        </div>
+        <!-- Right: Wheel/Diamond Canvas & Sliders -->
+        <div class="ibis-color-right">
+          <div class="wheel-wrapper">
+            <canvas id="ibis-color-wheel" width="220" height="220"></canvas>
+          </div>
+          <div class="hex-display" id="ibis-hex-text">#000000</div>
+          <div class="sliders-list">
+            <!-- HUE -->
+            <div class="slider-row">
+              <span class="slider-val" id="val-hue">0°</span>
+              <button class="step-btn" id="btn-hue-minus">-</button>
+              <input type="range" id="slider-hue" min="0" max="360" value="0" class="hue-gradient-track">
+              <button class="step-btn" id="btn-hue-plus">+</button>
+            </div>
+            <!-- SAT -->
+            <div class="slider-row">
+              <span class="slider-val" id="val-sat">0%</span>
+              <button class="step-btn" id="btn-sat-minus">-</button>
+              <input type="range" id="slider-sat" min="0" max="100" value="0">
+              <button class="step-btn" id="btn-sat-plus">+</button>
+            </div>
+            <!-- VAL -->
+            <div class="slider-row">
+              <span class="slider-val" id="val-val">0%</span>
+              <button class="step-btn" id="btn-val-minus">-</button>
+              <input type="range" id="slider-val" min="0" max="100" value="0">
+              <button class="step-btn" id="btn-val-plus">+</button>
+            </div>
+            <!-- R -->
+            <div class="slider-row">
+              <span class="slider-val" id="val-r">0</span>
+              <button class="step-btn" id="btn-r-minus">-</button>
+              <input type="range" id="slider-r" min="0" max="255" value="0">
+              <button class="step-btn" id="btn-r-plus">+</button>
+            </div>
+            <!-- G -->
+            <div class="slider-row">
+              <span class="slider-val" id="val-g">0</span>
+              <button class="step-btn" id="btn-g-minus">-</button>
+              <input type="range" id="slider-g" min="0" max="255" value="0">
+              <button class="step-btn" id="btn-g-plus">+</button>
+            </div>
+            <!-- B -->
+            <div class="slider-row">
+              <span class="slider-val" id="val-b">0</span>
+              <button class="step-btn" id="btn-b-minus">-</button>
+              <input type="range" id="slider-b" min="0" max="255" value="0">
+              <button class="step-btn" id="btn-b-plus">+</button>
+            </div>
+            <!-- ALPHA -->
+            <div class="slider-row">
+              <span class="slider-val" id="val-alpha">100%</span>
+              <button class="step-btn" id="btn-alpha-minus">-</button>
+              <input type="range" id="slider-alpha" min="0" max="100" value="100">
+              <button class="step-btn" id="btn-alpha-plus">+</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -730,10 +798,6 @@
 
       async loadAndRenderProjects() {
         this.projects = await KyframeDB.getAllProjects();
-        if (this.projects.length === 0) {
-          await this.createDefaultDemoProject();
-          this.projects = await KyframeDB.getAllProjects();
-        }
         this.renderProjects();
       },
 
@@ -972,15 +1036,16 @@
 
       fitToViewport() {
         const viewport = document.getElementById('canvas-viewport');
-        const vw = viewport.clientWidth - 40;
-        const vh = viewport.clientHeight - 40;
+        const vw = viewport.clientWidth - 20;
+        const vh = viewport.clientHeight - 20;
         const cw = this.canvas.width;
         const ch = this.canvas.height;
 
         if (cw <= 0 || ch <= 0) return;
 
-        const scale = Math.min(vw / cw, vh / ch, 1.5);
-        App.zoom = Math.max(0.1, scale);
+        // Scale to occupy available viewport comfortably without appearing tiny
+        const scale = Math.min(vw / cw, vh / ch);
+        App.zoom = Math.max(0.3, scale);
         App.panX = 0;
         App.panY = 0;
         this.updateTransform();
@@ -1077,7 +1142,12 @@
 
         if (!this.isDrawing) return;
 
-        const coords = this.getCanvasCoordinates(e);
+        const rawCoords = this.getCanvasCoordinates(e);
+        // Exponential moving average stroke stabilizer (0.4 smoothing weight)
+        const coords = {
+          x: this.lastPoint.x + (rawCoords.x - this.lastPoint.x) * 0.4,
+          y: this.lastPoint.y + (rawCoords.y - this.lastPoint.y) * 0.4
+        };
         this.drawSegment(this.lastPoint, coords);
         this.lastPoint = coords;
       },
@@ -1200,10 +1270,31 @@
         const toolBtns = document.querySelectorAll('.vertical-toolbar .tool-btn[data-tool]');
         toolBtns.forEach(btn => {
           btn.addEventListener('click', () => {
+            const tool = btn.getAttribute('data-tool');
+
+            if (tool === 'color') {
+              this.openColorPickerModal();
+              return;
+            }
+
+            if (tool === 'brush' && App.currentTool === 'brush') {
+              this.openBrushSelectorModal();
+              return;
+            }
+
             toolBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            App.currentTool = btn.getAttribute('data-tool');
+            App.currentTool = tool;
           });
+        });
+
+        // Modals close buttons
+        document.getElementById('btn-close-brush-modal')?.addEventListener('click', () => {
+          document.getElementById('modal-brush-selector').classList.remove('active');
+        });
+
+        document.getElementById('btn-close-color-modal')?.addEventListener('click', () => {
+          document.getElementById('modal-color-picker').classList.remove('active');
         });
 
         // Brush Sliders
@@ -1219,13 +1310,6 @@
         opacitySlider.addEventListener('input', (e) => {
           App.brushOpacity = parseInt(e.target.value) / 100;
           opacityVal.textContent = `${e.target.value}%`;
-        });
-
-        const colorInput = document.getElementById('color-input');
-        const colorPreview = document.getElementById('color-preview');
-        colorInput.addEventListener('input', (e) => {
-          App.currentColor = e.target.value;
-          colorPreview.style.backgroundColor = e.target.value;
         });
 
         // Undo & Redo Buttons
@@ -1310,12 +1394,24 @@
         document.getElementById('btn-next-frame').addEventListener('click', () => this.stepFrame(1));
         document.getElementById('btn-add-frame').addEventListener('click', () => this.addFrame());
 
-        document.getElementById('fps-select').addEventListener('change', (e) => {
+        document.getElementById('fps-select-modal')?.addEventListener('change', (e) => {
           if (App.currentProject) {
             App.currentProject.fps = parseInt(e.target.value);
             if (App.isPlaying) {
               this.stopPlay();
               this.startPlay();
+            }
+          }
+        });
+
+        document.getElementById('total-frames-input-modal')?.addEventListener('change', (e) => {
+          if (App.currentProject) {
+            const newTotal = Math.max(1, parseInt(e.target.value) || 1);
+            if (newTotal !== App.currentProject.frameCount) {
+              this.saveHistoryState();
+              App.currentProject.frameCount = newTotal;
+              this.renderTimeline();
+              this.renderCurrentFrame();
             }
           }
         });
@@ -1374,7 +1470,8 @@
         App.historyIndex = -1;
 
         document.getElementById('current-project-title').textContent = proj.name;
-        document.getElementById('fps-select').value = proj.fps || 12;
+        if (document.getElementById('fps-select-modal')) document.getElementById('fps-select-modal').value = proj.fps || 12;
+        if (document.getElementById('total-frames-input-modal')) document.getElementById('total-frames-input-modal').value = proj.frameCount || 1;
 
         CanvasEngine.setSize(proj.width, proj.height);
 
@@ -1422,13 +1519,17 @@
       prepareActiveLayerCanvas() {
         CanvasEngine.clear();
         if (!App.currentProject || !App.activeLayerId) return;
-        const frameData = App.currentProject.framesData[App.activeLayerId] ? App.currentProject.framesData[App.activeLayerId][App.currentFrameIndex] : null;
-        if (frameData) {
+        const exposed = this.getExposedFrameData(App.activeLayerId, App.currentFrameIndex);
+        if (exposed && exposed.data) {
           const img = new Image();
-          img.onload = () => {
+          img.src = exposed.data;
+          if (img.complete) {
             CanvasEngine.ctx.drawImage(img, 0, 0);
-          };
-          img.src = frameData;
+          } else {
+            img.onload = () => {
+              CanvasEngine.ctx.drawImage(img, 0, 0);
+            };
+          }
         }
       },
 
@@ -1583,6 +1684,159 @@
         this.renderTimeline();
       },
 
+      openBrushSelectorModal() {
+        const modal = document.getElementById('modal-brush-selector');
+        const grid = document.getElementById('brush-presets-grid');
+        grid.innerHTML = '';
+
+        if (window.KYFRAME_BRUSHES) {
+          Object.entries(window.KYFRAME_BRUSHES).forEach(([id, b]) => {
+            const card = document.createElement('div');
+            card.className = `brush-card ${App.currentBrushId === id ? 'active' : ''}`;
+            card.innerHTML = `
+              <svg class="brush-card-icon" viewBox="0 0 24 24"><use href="#icon-brush"/></svg>
+              <div class="brush-card-title">${b.name}</div>
+            `;
+            card.addEventListener('click', () => {
+              App.currentBrushId = id;
+              App.brushSize = b.size || 8;
+              App.brushOpacity = b.opacity || 1.0;
+              document.getElementById('brush-size-slider').value = App.brushSize;
+              document.getElementById('brush-size-val').textContent = `${App.brushSize} px`;
+              document.getElementById('brush-opacity-slider').value = Math.round(App.brushOpacity * 100);
+              document.getElementById('brush-opacity-val').textContent = `${Math.round(App.brushOpacity * 100)}%`;
+
+              modal.classList.remove('active');
+              this.switchToBrushTool();
+            });
+            grid.appendChild(card);
+          });
+        }
+        modal.classList.add('active');
+      },
+
+      openColorPickerModal() {
+        const modal = document.getElementById('modal-color-picker');
+        this.renderIbisColorPicker();
+        modal.classList.add('active');
+      },
+
+      switchToBrushTool() {
+        App.currentTool = 'brush';
+        const toolBtns = document.querySelectorAll('.vertical-toolbar .tool-btn[data-tool]');
+        toolBtns.forEach(b => {
+          if (b.getAttribute('data-tool') === 'brush') b.classList.add('active');
+          else b.classList.remove('active');
+        });
+      },
+
+      renderIbisColorPicker() {
+        const grid = document.getElementById('ibis-swatch-grid');
+        grid.innerHTML = '';
+        const defaultPalette = [
+          "#000000", "#ffffff", "#7f7f7f", "#c3c3c3", "#880015", "#b97a57", "#ed1c24", "#ffaec9",
+          "#ff7f27", "#ffc90e", "#fff200", "#efe4b0", "#22b14c", "#b5e61d", "#00a2e8", "#99d9ea",
+          "#3f48cc", "#7092be", "#a349a4", "#c8bfe7", "#464646", "#d0d0d0", "#631010", "#a05a30",
+          "#ab1010", "#d08a8a", "#d05010", "#d0a010", "#d0d010", "#d0d0a0", "#108030", "#80d010",
+          "#1060a0", "#60a0d0", "#202080", "#506090", "#702070", "#9070a0"
+        ];
+
+        defaultPalette.forEach(hex => {
+          const item = document.createElement('div');
+          item.className = 'swatch-item';
+          item.style.backgroundColor = hex;
+          item.addEventListener('click', () => {
+            this.setAppColor(hex);
+            document.getElementById('modal-color-picker').classList.remove('active');
+            this.switchToBrushTool();
+          });
+          grid.appendChild(item);
+        });
+
+        // Wheel rendering & controls setup
+        this.initColorWheelCanvas();
+      },
+
+      initColorWheelCanvas() {
+        const wheelCanvas = document.getElementById('ibis-color-wheel');
+        const wctx = wheelCanvas.getContext('2d');
+        const cx = 110, cy = 110, outerR = 100, innerR = 75;
+
+        const drawWheel = () => {
+          wctx.clearRect(0, 0, 220, 220);
+          // Draw Hue Outer Ring
+          for (let angle = 0; angle < 360; angle += 1) {
+            const rad1 = (angle - 0.5) * Math.PI / 180;
+            const rad2 = (angle + 1.5) * Math.PI / 180;
+            wctx.beginPath();
+            wctx.arc(cx, cy, outerR, rad1, rad2);
+            wctx.arc(cx, cy, innerR, rad2, rad1, true);
+            wctx.closePath();
+            wctx.fillStyle = `hsl(${angle}, 100%, 50%)`;
+            wctx.fill();
+          }
+
+          // Draw HSV Diamond in Center
+          wctx.save();
+          wctx.translate(cx, cy);
+          wctx.rotate(Math.PI / 4);
+          const dim = 90;
+          wctx.beginPath();
+          wctx.rect(-dim/2, -dim/2, dim, dim);
+          const gradH = wctx.createLinearGradient(-dim/2, 0, dim/2, 0);
+          gradH.addColorStop(0, '#ffffff');
+          gradH.addColorStop(1, App.currentColor || '#ff0000');
+          wctx.fillStyle = gradH;
+          wctx.fill();
+
+          const gradV = wctx.createLinearGradient(0, -dim/2, 0, dim/2);
+          gradV.addColorStop(0, 'transparent');
+          gradV.addColorStop(1, '#000000');
+          wctx.fillStyle = gradV;
+          wctx.fill();
+          wctx.restore();
+        };
+
+        drawWheel();
+
+        // Canvas Click Listener for color picking from wheel
+        wheelCanvas.onclick = (e) => {
+          const rect = wheelCanvas.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const px = wctx.getImageData(x, y, 1, 1).data;
+          if (px[3] > 0) {
+            const hex = `#${((1 << 24) + (px[0] << 16) + (px[1] << 8) + px[2]).toString(16).slice(1)}`;
+            this.setAppColor(hex);
+            document.getElementById('modal-color-picker').classList.remove('active');
+            this.switchToBrushTool();
+          }
+        };
+      },
+
+      setAppColor(hex) {
+        App.currentColor = hex;
+        const colorPreview = document.getElementById('color-preview');
+        if (colorPreview) colorPreview.style.backgroundColor = hex;
+        const hexText = document.getElementById('ibis-hex-text');
+        if (hexText) hexText.textContent = hex.toUpperCase();
+        this.updateColorPickerSlidersFromHex(hex);
+      },
+
+      updateColorPickerSlidersFromHex(hex) {
+        if (!hex || hex.length < 7) return;
+        const r = parseInt(hex.slice(1, 3), 16) || 0;
+        const g = parseInt(hex.slice(3, 5), 16) || 0;
+        const b = parseInt(hex.slice(5, 7), 16) || 0;
+
+        const rSlider = document.getElementById('slider-r');
+        if (rSlider) { rSlider.value = r; document.getElementById('val-r').textContent = r; }
+        const gSlider = document.getElementById('slider-g');
+        if (gSlider) { gSlider.value = g; document.getElementById('val-g').textContent = g; }
+        const bSlider = document.getElementById('slider-b');
+        if (bSlider) { bSlider.value = b; document.getElementById('val-b').textContent = b; }
+      },
+
       duplicateLayer() {
         const active = this.getActiveLayer();
         if (!active) return;
@@ -1675,8 +1929,10 @@
         const ruler = document.getElementById('timeline-ruler');
         const tracksContainer = document.getElementById('timeline-tracks-container');
 
-        document.getElementById('current-frame-num').textContent = App.currentFrameIndex + 1;
-        document.getElementById('total-frames-num').textContent = App.currentProject.frameCount;
+        const curNum = document.getElementById('current-frame-num');
+        if (curNum) curNum.textContent = App.currentFrameIndex + 1;
+        const totNum = document.getElementById('total-frames-num');
+        if (totNum) totNum.textContent = App.currentProject.frameCount;
 
         // Render Ruler Cells
         ruler.innerHTML = '';
