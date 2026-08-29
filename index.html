@@ -468,7 +468,13 @@
         <h2>EXPORTAR E IMPORTAR</h2>
       </div>
       <div class="modal-body">
-        <div class="export-options-list">
+        <div style="display:flex; gap:10px; margin-bottom:16px;">
+          <button id="tab-export-category" class="btn primary half" style="flex:1;">EXPORTAR</button>
+          <button id="tab-import-category" class="btn secondary half" style="flex:1;">IMPORTAR</button>
+        </div>
+
+        <!-- Export Submenu Panel -->
+        <div id="section-export-panel" class="export-options-list">
           <button id="btn-export-mp4" class="btn primary full-width">
             Exportar Video Animación (MP4)
           </button>
@@ -481,13 +487,20 @@
           <button id="btn-export-png-seq" class="btn secondary full-width">
             Exportar Secuencia PNG (ZIP)
           </button>
-          <hr class="modal-divider">
           <button id="btn-export-project-file" class="btn secondary full-width">
             Exportar Archivo de Proyecto (.kyframe)
           </button>
-          <label class="btn primary full-width file-input-wrapper" style="text-align:center; cursor:pointer;">
-            Importar Archivo de Proyecto (.kyframe)
+        </div>
+
+        <!-- Import Submenu Panel -->
+        <div id="section-import-panel" class="export-options-list" style="display:none;">
+          <label class="btn primary full-width file-input-wrapper" style="text-align:center; cursor:pointer; padding:14px; display:block;">
+            Cargar Proyecto (.kyframe)
             <input type="file" id="input-import-project" accept=".kyframe,.json" style="display:none;">
+          </label>
+          <label class="btn secondary full-width file-input-wrapper" style="text-align:center; cursor:pointer; padding:14px; display:block; margin-top:10px;">
+            Importar Imagen como Capa (PNG/JPG)
+            <input type="file" id="input-import-layer" accept="image/*" style="display:none;">
           </label>
         </div>
       </div>
@@ -1130,7 +1143,8 @@
 
         if (App.currentTool === 'transform') {
           this.isTransforming = true;
-          this.transformStart = { x: e.clientX, y: e.clientY };
+          this.transformStart = coords;
+          this.transformStartClient = { x: e.clientX, y: e.clientY };
           return;
         }
 
@@ -1159,22 +1173,32 @@
 
         if (this.isSelecting) {
           const coords = this.getCanvasCoordinates(e);
-          this.clearGhost();
-          this.ghostCtx.setLineDash([6, 6]);
-          this.ghostCtx.strokeStyle = '#f05a28';
-          this.ghostCtx.lineWidth = 2;
-          this.ghostCtx.strokeRect(this.selectStart.x, this.selectStart.y, coords.x - this.selectStart.x, coords.y - this.selectStart.y);
-          this.ghostCtx.setLineDash([]);
+          this.selectionRect = {
+            x: Math.min(this.selectStart.x, coords.x),
+            y: Math.min(this.selectStart.y, coords.y),
+            w: Math.abs(coords.x - this.selectStart.x),
+            h: Math.abs(coords.y - this.selectStart.y)
+          };
+          this.drawSelectionOverlay();
           return;
         }
 
         if (this.isTransforming) {
-          const dx = e.clientX - this.transformStart.x;
-          const dy = e.clientY - this.transformStart.y;
-          App.panX += dx;
-          App.panY += dy;
-          this.transformStart = { x: e.clientX, y: e.clientY };
-          this.updateTransform();
+          const coords = this.getCanvasCoordinates(e);
+          const dx = coords.x - this.transformStart.x;
+          const dy = coords.y - this.transformStart.y;
+
+          if (this.selectionImage && this.selectionRect) {
+            this.selectionRect.x += dx;
+            this.selectionRect.y += dy;
+            this.transformStart = coords;
+            this.renderTransformPreview();
+          } else {
+            App.panX += (e.clientX - this.transformStartClient.x);
+            App.panY += (e.clientY - this.transformStartClient.y);
+            this.transformStartClient = { x: e.clientX, y: e.clientY };
+            this.updateTransform();
+          }
           return;
         }
 
@@ -1209,6 +1233,32 @@
           Editor.saveCurrentFrameData();
           Editor.renderCurrentFrame();
         }
+      },
+
+      drawSelectionOverlay() {
+        this.clearGhost();
+        if (!this.selectionRect) return;
+        const r = this.selectionRect;
+        this.ghostCtx.setLineDash([6, 6]);
+        this.ghostCtx.strokeStyle = '#f05a28';
+        this.ghostCtx.lineWidth = 2;
+        this.ghostCtx.strokeRect(r.x, r.y, r.w, r.h);
+        this.ghostCtx.setLineDash([]);
+
+        // Interactive corner handles
+        this.ghostCtx.fillStyle = '#ffffff';
+        this.ghostCtx.fillRect(r.x - 4, r.y - 4, 8, 8);
+        this.ghostCtx.fillRect(r.x + r.w - 4, r.y - 4, 8, 8);
+        this.ghostCtx.fillRect(r.x - 4, r.y + r.h - 4, 8, 8);
+        this.ghostCtx.fillRect(r.x + r.w - 4, r.y + r.h - 4, 8, 8);
+      },
+
+      renderTransformPreview() {
+        if (!this.selectionRect || !this.selectionImage) return;
+        this.clear();
+        const r = this.selectionRect;
+        this.ctx.drawImage(this.selectionImage, r.x, r.y, r.w, r.h);
+        this.drawSelectionOverlay();
       },
 
       drawSegment(p1, p2) {
@@ -1497,6 +1547,21 @@
           }
         });
 
+        // Export / Import Tab Category Switching
+        document.getElementById('tab-export-category')?.addEventListener('click', () => {
+          document.getElementById('section-export-panel').style.display = 'block';
+          document.getElementById('section-import-panel').style.display = 'none';
+          document.getElementById('tab-export-category').className = 'btn primary half';
+          document.getElementById('tab-import-category').className = 'btn secondary half';
+        });
+
+        document.getElementById('tab-import-category')?.addEventListener('click', () => {
+          document.getElementById('section-export-panel').style.display = 'none';
+          document.getElementById('section-import-panel').style.display = 'block';
+          document.getElementById('tab-export-category').className = 'btn secondary half';
+          document.getElementById('tab-import-category').className = 'btn primary half';
+        });
+
         // Export Modal & Actions
         document.getElementById('btn-export-modal').addEventListener('click', () => {
           document.getElementById('modal-export').classList.add('active');
@@ -1668,9 +1733,14 @@
           if (exposed && exposed.data) {
             const img = new Image();
             img.onload = () => {
-              CanvasEngine.ghostCtx.globalAlpha = opacity * layer.opacity;
-              CanvasEngine.ghostCtx.drawImage(img, 0, 0);
-              CanvasEngine.ghostCtx.globalAlpha = 1.0;
+              const gctx = CanvasEngine.ghostCtx;
+              gctx.save();
+              gctx.globalAlpha = opacity * layer.opacity;
+              gctx.drawImage(img, 0, 0);
+              gctx.globalCompositeOperation = 'source-atop';
+              gctx.fillStyle = tintColor || 'rgba(255, 0, 0, 0.5)';
+              gctx.fillRect(0, 0, CanvasEngine.ghostCanvas.width, CanvasEngine.ghostCanvas.height);
+              gctx.restore();
             };
             img.src = exposed.data;
           }
@@ -1744,13 +1814,17 @@
         const grid = document.getElementById('brush-presets-grid');
         grid.innerHTML = '';
 
-        if (window.KYFRAME_BRUSHES) {
-          Object.entries(window.KYFRAME_BRUSHES).forEach(([id, b]) => {
+        const brushesSource = window.KYFRAME_BRUSHES || (typeof KYFRAME_BRUSHES !== 'undefined' ? KYFRAME_BRUSHES : null);
+
+        if (brushesSource) {
+          Object.entries(brushesSource).forEach(([id, b]) => {
             const card = document.createElement('div');
+            const isEraser = b.category === 'Gomas' || b.type.includes('eraser');
             card.className = `brush-card ${App.currentBrushId === id ? 'active' : ''}`;
             card.innerHTML = `
-              <svg class="brush-card-icon" viewBox="0 0 24 24"><use href="#icon-brush"/></svg>
+              <svg class="brush-card-icon" viewBox="0 0 24 24"><use href="${isEraser ? '#icon-eraser' : '#icon-brush'}"/></svg>
               <div class="brush-card-title">${b.name}</div>
+              <div style="font-size:9px; color:var(--text-muted);">${b.category || 'Pincel'}</div>
             `;
             card.addEventListener('click', () => {
               App.currentBrushId = id;
@@ -1762,7 +1836,16 @@
               document.getElementById('brush-opacity-val').textContent = `${Math.round(App.brushOpacity * 100)}%`;
 
               modal.classList.remove('active');
-              this.switchToBrushTool();
+              if (isEraser) {
+                App.currentTool = 'eraser';
+                const toolBtns = document.querySelectorAll('.vertical-toolbar .tool-btn[data-tool]');
+                toolBtns.forEach(btn => {
+                  if (btn.getAttribute('data-tool') === 'eraser') btn.classList.add('active');
+                  else btn.classList.remove('active');
+                });
+              } else {
+                this.switchToBrushTool();
+              }
             });
             grid.appendChild(card);
           });
@@ -1911,8 +1994,6 @@
           if (isDraggingWheel) {
             isDraggingWheel = false;
             wheelCanvas.releasePointerCapture(e.pointerId);
-            document.getElementById('modal-color-picker').classList.remove('active');
-            this.switchToBrushTool();
           }
         };
       },
