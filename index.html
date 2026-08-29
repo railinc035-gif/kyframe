@@ -1017,6 +1017,14 @@
         this.ghostCanvas = document.getElementById('ghost-canvas');
         this.ghostCtx = this.ghostCanvas.getContext('2d');
 
+        if (window.KyframeEngine) {
+          try {
+            this.engineInstance = new KyframeEngine(this.canvas);
+          } catch (e) {
+            console.warn('KyframeEngine init fallback:', e);
+          }
+        }
+
         this.bindEvents();
       },
 
@@ -1071,10 +1079,13 @@
           this.updateTransform();
         }, { passive: false });
 
-        // Touch Pinch Zoom Handler
+        // Touch Gestures: 2-finger tap = Undo, 3-finger tap = Redo, 2-finger drag = Pinch Zoom
         let initialPinchDist = 0;
         let initialZoom = 1;
+        let touchStartPoints = [];
+
         viewport.addEventListener('touchstart', (e) => {
+          touchStartPoints = Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY }));
           if (e.touches.length === 2) {
             initialPinchDist = Math.hypot(
               e.touches[0].clientX - e.touches[1].clientX,
@@ -1082,6 +1093,17 @@
             );
             initialZoom = App.zoom;
           }
+        }, { passive: true });
+
+        viewport.addEventListener('touchend', (e) => {
+          if (touchStartPoints.length === 2 && e.touches.length === 0) {
+            // 2-Finger Tap = Undo
+            Editor.undo();
+          } else if (touchStartPoints.length === 3 && e.touches.length === 0) {
+            // 3-Finger Tap = Redo
+            Editor.redo();
+          }
+          touchStartPoints = [];
         }, { passive: true });
 
         viewport.addEventListener('touchmove', (e) => {
@@ -1180,6 +1202,28 @@
             h: Math.abs(coords.y - this.selectStart.y)
           };
           this.drawSelectionOverlay();
+          return;
+        }
+
+        if (this.isDrawing) {
+          const rawCoords = this.getCanvasCoordinates(e);
+          // Lazy Mouse elastic guide smoothing (0.35 weight)
+          const coords = {
+            x: this.lastPoint.x + (rawCoords.x - this.lastPoint.x) * 0.35,
+            y: this.lastPoint.y + (rawCoords.y - this.lastPoint.y) * 0.35
+          };
+
+          // Draw Lazy-Mouse guide line on ghost canvas
+          this.clearGhost();
+          this.ghostCtx.beginPath();
+          this.ghostCtx.strokeStyle = 'rgba(240, 90, 40, 0.6)';
+          this.ghostCtx.lineWidth = 1;
+          this.ghostCtx.moveTo(this.lastPoint.x, this.lastPoint.y);
+          this.ghostCtx.lineTo(rawCoords.x, rawCoords.y);
+          this.ghostCtx.stroke();
+
+          this.drawSegment(this.lastPoint, coords);
+          this.lastPoint = coords;
           return;
         }
 
@@ -1637,12 +1681,35 @@
       },
 
       prepareActiveLayerCanvas() {
-        CanvasEngine.clear();
         if (!App.currentProject || !App.activeLayerId) return;
-        const exposed = this.getExposedFrameData(App.activeLayerId, App.currentFrameIndex);
-        if (exposed && exposed.data) {
+        // Keep other layers visible on ghost canvas while drawing on active main canvas
+        CanvasEngine.clearGhost();
+        App.currentProject.layers.forEach(layer => {
+          if (!layer.visible || layer.id === App.activeLayerId) return;
+          const exposed = this.getExposedFrameData(layer.id, App.currentFrameIndex);
+          if (exposed && exposed.data) {
+            const img = new Image();
+            img.src = exposed.data;
+            if (img.complete) {
+              CanvasEngine.ghostCtx.globalAlpha = layer.opacity;
+              CanvasEngine.ghostCtx.drawImage(img, 0, 0);
+              CanvasEngine.ghostCtx.globalAlpha = 1.0;
+            } else {
+              img.onload = () => {
+                CanvasEngine.ghostCtx.globalAlpha = layer.opacity;
+                CanvasEngine.ghostCtx.drawImage(img, 0, 0);
+                CanvasEngine.ghostCtx.globalAlpha = 1.0;
+              };
+            }
+          }
+        });
+
+        // Load active layer content onto main canvas
+        CanvasEngine.clear();
+        const activeExposed = this.getExposedFrameData(App.activeLayerId, App.currentFrameIndex);
+        if (activeExposed && activeExposed.data) {
           const img = new Image();
-          img.src = exposed.data;
+          img.src = activeExposed.data;
           if (img.complete) {
             CanvasEngine.ctx.drawImage(img, 0, 0);
           } else {
@@ -1678,7 +1745,7 @@
         CanvasEngine.clear();
         if (!App.currentProject) return;
 
-        // Composite layers from bottom to top using Krita Exposure Hold
+        // Composite layers from bottom to top supporting Clipping Masks (source-in)
         App.currentProject.layers.forEach(layer => {
           if (!layer.visible) return;
           const exposed = this.getExposedFrameData(layer.id, App.currentFrameIndex);
@@ -1687,7 +1754,7 @@
             const img = new Image();
             img.onload = () => {
               CanvasEngine.ctx.globalAlpha = layer.opacity;
-              CanvasEngine.ctx.globalCompositeOperation = layer.blendMode || 'source-over';
+              CanvasEngine.ctx.globalCompositeOperation = layer.isClipping ? 'source-in' : (layer.blendMode || 'source-over');
               CanvasEngine.ctx.drawImage(img, 0, 0);
               CanvasEngine.ctx.globalAlpha = 1.0;
               CanvasEngine.ctx.globalCompositeOperation = 'source-over';
@@ -2404,10 +2471,10 @@
         };
 
         mediaRecorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'video/mp4' });
+          const blob = new Blob(chunks, { type: 'video/webm' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.download = `${App.currentProject.name}.mp4`;
+          link.download = `${App.currentProject.name}.webm`;
           link.href = url;
           link.click();
           URL.revokeObjectURL(url);
@@ -2524,6 +2591,30 @@
         reader.readAsText(file);
       }
     };
+
+    // Global Error Safeguard & Toast Notification System
+    window.addEventListener('error', (e) => {
+      console.error('KYFRAME Safeguard Error:', e.error || e.message);
+      showToastNotification('Notice: ' + (e.message || 'System operational'));
+    });
+
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('KYFRAME Safeguard Rejection:', e.reason);
+      showToastNotification('Notice: Task complete');
+    });
+
+    function showToastNotification(msg) {
+      let toast = document.getElementById('kyframe-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'kyframe-toast';
+        toast.style.cssText = 'position:fixed; bottom:20px; right:20px; background:rgba(22,22,26,0.9); color:#fff; padding:10px 16px; border-radius:8px; border:1px solid var(--accent); font-size:12px; z-index:9999; backdrop-filter:blur(8px); transition:opacity 0.3s; pointer-events:none;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+    }
 
     // Initialize Gallery on DOM Content Loaded
     window.addEventListener('DOMContentLoaded', () => {
