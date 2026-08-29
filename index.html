@@ -524,24 +524,24 @@
     </div>
   </div>
 
-  <!-- Modal 5: Selector de Pinceles & Creador -->
+  <!-- Modal 5: Selector de Pinceles (Estilo Ibis Paint X) -->
   <div id="modal-brush-selector" class="modal-backdrop">
-    <div class="modal-card modal-large">
+    <div class="modal-card modal-ibis-brush">
       <div class="modal-header">
-        <h2>BIBLIOTECA Y CREADOR DE PINCELES</h2>
+        <h2>PINCELES</h2>
         <button id="btn-close-brush-modal" class="icon-btn small">✕</button>
       </div>
-      <div class="modal-body">
-        <div style="display:flex; gap:10px; margin-bottom:12px;">
-          <button id="tab-brush-preset-lib" class="btn primary half" style="flex:1;">BIBLIOTECA</button>
-          <button id="tab-brush-custom-creator" class="btn secondary half" style="flex:1;">CREAR PINCEL</button>
+      <div class="ibis-brush-tabs-row">
+        <button id="tab-brush-preset-lib" class="ibis-tab-btn active">Básico</button>
+        <button id="tab-brush-custom-creator" class="ibis-tab-btn">Personalizado</button>
+      </div>
+      <div class="modal-body" style="padding:0;">
+        <!-- Ibis Paint X Vertical Brush List -->
+        <div id="panel-brush-presets" class="ibis-brush-list-container">
+          <!-- Populated dynamically with Ibis Paint X list rows -->
         </div>
 
-        <div id="panel-brush-presets" class="brush-grid-container">
-          <!-- Populated dynamically from KYFRAME_BRUSHES -->
-        </div>
-
-        <div id="panel-brush-creator" style="display:none; flex-direction:column; gap:10px;">
+        <div id="panel-brush-creator" style="display:none; padding:16px; flex-direction:column; gap:10px;">
           <div class="form-group">
             <label>Nombre del Pincel</label>
             <input type="text" id="custom-brush-name" value="Mi Pincel Personalizado" style="width:100%; padding:8px; border-radius:8px; background:var(--bg-secondary); color:#fff; border:1px solid var(--border-color);">
@@ -1287,16 +1287,6 @@
           return;
         }
 
-        if (!this.isDrawing) return;
-
-        const rawCoords = this.getCanvasCoordinates(e);
-        // Exponential moving average stroke stabilizer (0.4 smoothing weight)
-        const coords = {
-          x: this.lastPoint.x + (rawCoords.x - this.lastPoint.x) * 0.4,
-          y: this.lastPoint.y + (rawCoords.y - this.lastPoint.y) * 0.4
-        };
-        this.drawSegment(this.lastPoint, coords);
-        this.lastPoint = coords;
       },
 
       onPointerUp(e) {
@@ -1306,6 +1296,14 @@
 
         if (this.isSelecting) {
           this.isSelecting = false;
+          if (this.selectionRect && this.selectionRect.w > 0 && this.selectionRect.h > 0) {
+            const crop = this.ctx.getImageData(this.selectionRect.x, this.selectionRect.y, this.selectionRect.w, this.selectionRect.h);
+            const temp = document.createElement('canvas');
+            temp.width = this.selectionRect.w;
+            temp.height = this.selectionRect.h;
+            temp.getContext('2d').putImageData(crop, 0, 0);
+            this.selectionImage = temp;
+          }
         }
 
         if (this.isTransforming) {
@@ -1983,22 +1981,39 @@
 
       openBrushSelectorModal() {
         const modal = document.getElementById('modal-brush-selector');
-        const grid = document.getElementById('panel-brush-presets') || document.getElementById('brush-presets-grid');
-        if (grid) grid.innerHTML = '';
+        const listContainer = document.getElementById('panel-brush-presets');
+        if (listContainer) listContainer.innerHTML = '';
 
         const brushesSource = window.KYFRAME_BRUSHES || (typeof KYFRAME_BRUSHES !== 'undefined' ? KYFRAME_BRUSHES : null);
 
-        if (brushesSource) {
+        if (brushesSource && listContainer) {
           Object.entries(brushesSource).forEach(([id, b]) => {
-            const card = document.createElement('div');
-            const isEraser = b.category === 'Gomas' || b.type.includes('eraser');
-            card.className = `brush-card ${App.currentBrushId === id ? 'active' : ''}`;
-            card.innerHTML = `
-              <svg class="brush-card-icon" viewBox="0 0 24 24"><use href="${isEraser ? '#icon-eraser' : '#icon-brush'}"/></svg>
-              <div class="brush-card-title">${b.name}</div>
-              <div style="font-size:9px; color:var(--text-muted);">${b.category || 'Pincel'}</div>
+            const isEraser = b.category === 'Gomas' || (b.type && b.type.includes('eraser'));
+            const item = document.createElement('div');
+            item.className = `ibis-brush-item ${App.currentBrushId === id ? 'active' : ''}`;
+
+            const pCanvas = document.createElement('canvas');
+            pCanvas.className = 'ibis-brush-stroke-preview';
+            pCanvas.width = 140;
+            pCanvas.height = 24;
+            const pctx = pCanvas.getContext('2d');
+            pctx.beginPath();
+            pctx.strokeStyle = isEraser ? '#666' : (App.currentColor || '#f05a28');
+            pctx.lineWidth = Math.min(12, b.size || 8);
+            pctx.lineCap = 'round';
+            pctx.moveTo(10, 12);
+            pctx.bezierCurveTo(40, 4, 100, 20, 130, 12);
+            pctx.stroke();
+
+            item.innerHTML = `
+              <div class="ibis-brush-info">
+                <div class="ibis-brush-name">${b.name}</div>
+                <div class="ibis-brush-cat">${b.category || 'Pincel'}</div>
+              </div>
             `;
-            card.addEventListener('click', () => {
+            item.appendChild(pCanvas);
+
+            item.addEventListener('click', () => {
               App.currentBrushId = id;
               App.brushSize = b.size || 8;
               App.brushOpacity = b.opacity || 1.0;
@@ -2019,7 +2034,8 @@
                 this.switchToBrushTool();
               }
             });
-            grid.appendChild(card);
+
+            listContainer.appendChild(item);
           });
         }
         modal.classList.add('active');

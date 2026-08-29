@@ -992,51 +992,91 @@ button {
   transform: scale(0.9);
 }
 
-/* Brush Modal Grid Layout */
-.brush-grid-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 12px;
-  max-height: 380px;
-  overflow-y: auto;
-  padding: 4px;
+/* Ibis Paint X Style Brush Selector Modal Layout */
+.modal-card.modal-ibis-brush {
+  width: 520px;
+  max-width: 95vw;
+  background: #222226;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
 }
 
-.brush-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 12px;
+.ibis-brush-tabs-row {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  background: #18181b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ibis-tab-btn {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
+  border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
 }
 
-.brush-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-  background: var(--bg-hover);
+.ibis-tab-btn.active {
+  color: #ffffff;
+  border-bottom-color: var(--accent);
+  background: rgba(240, 90, 40, 0.08);
 }
 
-.brush-card.active {
-  border-color: var(--accent);
-  background: rgba(240, 90, 40, 0.15);
-  box-shadow: 0 0 10px rgba(240, 90, 40, 0.3);
+.ibis-brush-list-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 380px;
+  overflow-y: auto;
 }
 
-.brush-card-icon {
-  width: 32px;
-  height: 32px;
-  color: var(--accent);
+.ibis-brush-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  gap: 12px;
 }
 
-.brush-card-title {
-  font-size: 11px;
+.ibis-brush-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ibis-brush-item.active {
+  background: rgba(240, 90, 40, 0.18);
+  border-left: 4px solid var(--accent);
+}
+
+.ibis-brush-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ibis-brush-name {
+  font-size: 13px;
   font-weight: 600;
-  text-align: center;
+  color: #ffffff;
+}
+
+.ibis-brush-cat {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.ibis-brush-stroke-preview {
+  width: 140px;
+  height: 24px;
+  border-radius: 4px;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Ibis Paint X Color Selector Modal Styles */
