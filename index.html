@@ -729,7 +729,69 @@
 
       async loadAndRenderProjects() {
         this.projects = await KyframeDB.getAllProjects();
+        if (this.projects.length === 0) {
+          await this.createDefaultDemoProject();
+          this.projects = await KyframeDB.getAllProjects();
+        }
         this.renderProjects();
+      },
+
+      async createDefaultDemoProject() {
+        const layer1Id = 'layer_demo_1';
+        const layer2Id = 'layer_demo_2';
+
+        // Pre-render a simple 3-frame bouncing ball animation for the demo project
+        const demoCanvas = document.createElement('canvas');
+        demoCanvas.width = 1920;
+        demoCanvas.height = 1080;
+        const dctx = demoCanvas.getContext('2d');
+
+        const frame1Data = (() => {
+          dctx.clearRect(0, 0, 1920, 1080);
+          dctx.fillStyle = '#f05a28';
+          dctx.beginPath();
+          dctx.arc(960, 300, 100, 0, Math.PI * 2);
+          dctx.fill();
+          return demoCanvas.toDataURL();
+        })();
+
+        const frame2Data = (() => {
+          dctx.clearRect(0, 0, 1920, 1080);
+          dctx.fillStyle = '#f05a28';
+          dctx.beginPath();
+          dctx.arc(960, 540, 100, 0, Math.PI * 2);
+          dctx.fill();
+          return demoCanvas.toDataURL();
+        })();
+
+        const frame3Data = (() => {
+          dctx.clearRect(0, 0, 1920, 1080);
+          dctx.fillStyle = '#f05a28';
+          dctx.beginPath();
+          dctx.arc(960, 780, 120, 0, Math.PI * 2);
+          dctx.fill();
+          return demoCanvas.toDataURL();
+        })();
+
+        const demoProject = {
+          id: 'proj_demo_welcome',
+          name: 'Mi Primera Animación 🚀',
+          width: 1920,
+          height: 1080,
+          fps: 12,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          frameCount: 3,
+          thumbnail: frame2Data,
+          layers: [
+            { id: layer1Id, name: 'Pelota', visible: true, locked: false, opacity: 1.0, blendMode: 'source-over' }
+          ],
+          framesData: {
+            [layer1Id]: [frame1Data, frame2Data, frame3Data]
+          }
+        };
+
+        await KyframeDB.saveProject(demoProject);
       },
 
       renderProjects() {
