@@ -1058,8 +1058,14 @@
         this.updateTransform();
       },
 
-      updateTransform() {
+      updateTransform(animated = false) {
         const wrapper = document.getElementById('canvas-wrapper');
+        if (animated) {
+          wrapper.style.transition = 'transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+          setTimeout(() => { wrapper.style.transition = 'none'; }, 260);
+        } else {
+          wrapper.style.transition = 'none';
+        }
         wrapper.style.transform = `translate(${App.panX}px, ${App.panY}px) scale(${App.zoom})`;
       },
 
@@ -1407,11 +1413,18 @@
         this.bindEvents();
       },
 
+      triggerHaptic() {
+        if (navigator.vibrate) {
+          try { navigator.vibrate(10); } catch (e) {}
+        }
+      },
+
       bindEvents() {
-        // Tool Buttons
+        // Tool Buttons with Haptic Feedback
         const toolBtns = document.querySelectorAll('.vertical-toolbar .tool-btn[data-tool]');
         toolBtns.forEach(btn => {
           btn.addEventListener('click', () => {
+            this.triggerHaptic();
             const tool = btn.getAttribute('data-tool');
 
             if (tool === 'color') {

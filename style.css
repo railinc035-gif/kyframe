@@ -591,6 +591,11 @@ button {
   transform: scale(1.08);
 }
 
+.tool-btn:active, .icon-btn:active, .btn:active {
+  transform: scale(0.92) !important;
+  opacity: 0.9;
+}
+
 .tool-btn.active {
   background: var(--accent) !important;
   border-color: var(--accent) !important;
