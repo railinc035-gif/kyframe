@@ -1308,6 +1308,13 @@
 
         if (this.isTransforming) {
           this.isTransforming = false;
+          if (this.selectionImage && this.selectionRect) {
+            this.ctx.drawImage(this.selectionImage, this.selectionRect.x, this.selectionRect.y, this.selectionRect.w, this.selectionRect.h);
+            this.clearGhost();
+            this.selectionImage = null;
+            this.selectionRect = null;
+            Editor.saveCurrentFrameData();
+          }
         }
 
         if (this.isDrawing) {
@@ -1345,26 +1352,37 @@
       },
 
       drawSegment(p1, p2) {
-        this.ctx.beginPath();
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.lineWidth = App.brushSize;
-
-        if (App.currentTool === 'eraser') {
-          this.ctx.globalCompositeOperation = 'destination-out';
-          this.ctx.strokeStyle = 'rgba(0,0,0,1)';
+        if (this.engineInstance && this.engineInstance.brush) {
+          if (App.currentBrushId) {
+            this.engineInstance.setBrush(App.currentBrushId);
+          }
+          this.engineInstance.setSize(App.brushSize);
+          this.engineInstance.setOpacity(App.brushOpacity);
+          this.engineInstance.setColor(App.currentColor);
+          this.engineInstance.brush.ctx = this.ctx;
+          this.engineInstance.brush._drawSegment(p1, p2);
         } else {
+          this.ctx.beginPath();
+          this.ctx.lineCap = 'round';
+          this.ctx.lineJoin = 'round';
+          this.ctx.lineWidth = App.brushSize;
+
+          if (App.currentTool === 'eraser') {
+            this.ctx.globalCompositeOperation = 'destination-out';
+            this.ctx.strokeStyle = 'rgba(0,0,0,1)';
+          } else {
+            this.ctx.globalCompositeOperation = 'source-over';
+            this.ctx.strokeStyle = App.currentColor;
+            this.ctx.globalAlpha = App.brushOpacity;
+          }
+
+          this.ctx.moveTo(p1.x, p1.y);
+          this.ctx.lineTo(p2.x, p2.y);
+          this.ctx.stroke();
+
+          this.ctx.globalAlpha = 1.0;
           this.ctx.globalCompositeOperation = 'source-over';
-          this.ctx.strokeStyle = App.currentColor;
-          this.ctx.globalAlpha = App.brushOpacity;
         }
-
-        this.ctx.moveTo(p1.x, p1.y);
-        this.ctx.lineTo(p2.x, p2.y);
-        this.ctx.stroke();
-
-        this.ctx.globalAlpha = 1.0;
-        this.ctx.globalCompositeOperation = 'source-over';
       },
 
       pickColor(x, y) {
@@ -1841,30 +1859,43 @@
         return null;
       },
 
-      renderCurrentFrame() {
+      async renderCurrentFrame() {
         CanvasEngine.clear();
         if (!App.currentProject) return;
 
-        // Composite layers from bottom to top supporting Clipping Masks (source-in)
-        App.currentProject.layers.forEach(layer => {
-          if (!layer.visible) return;
+        const layersToDraw = App.currentProject.layers.filter(l => l.visible);
+        for (const layer of layersToDraw) {
           const exposed = this.getExposedFrameData(layer.id, App.currentFrameIndex);
-
           if (exposed && exposed.data) {
-            const img = new Image();
-            img.onload = () => {
-              CanvasEngine.ctx.save();
-              CanvasEngine.ctx.globalAlpha = layer.opacity;
-              CanvasEngine.ctx.globalCompositeOperation = layer.isClipping ? 'source-in' : (layer.blendMode || 'source-over');
-              if (layer.filter && layer.filter !== 'none') {
-                CanvasEngine.ctx.filter = layer.filter;
+            await new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                CanvasEngine.ctx.save();
+                CanvasEngine.ctx.globalAlpha = layer.opacity;
+                CanvasEngine.ctx.globalCompositeOperation = layer.isClipping ? 'source-in' : (layer.blendMode || 'source-over');
+                if (layer.filter && layer.filter !== 'none') {
+                  CanvasEngine.ctx.filter = layer.filter;
+                }
+                CanvasEngine.ctx.drawImage(img, 0, 0);
+                CanvasEngine.ctx.restore();
+                resolve();
+              };
+              img.onerror = resolve;
+              img.src = exposed.data;
+              if (img.complete) {
+                CanvasEngine.ctx.save();
+                CanvasEngine.ctx.globalAlpha = layer.opacity;
+                CanvasEngine.ctx.globalCompositeOperation = layer.isClipping ? 'source-in' : (layer.blendMode || 'source-over');
+                if (layer.filter && layer.filter !== 'none') {
+                  CanvasEngine.ctx.filter = layer.filter;
+                }
+                CanvasEngine.ctx.drawImage(img, 0, 0);
+                CanvasEngine.ctx.restore();
+                resolve();
               }
-              CanvasEngine.ctx.drawImage(img, 0, 0);
-              CanvasEngine.ctx.restore();
-            };
-            img.src = exposed.data;
+            });
           }
-        });
+        }
 
         this.renderOnionSkin();
       },
@@ -2079,8 +2110,64 @@
           grid.appendChild(item);
         });
 
+        // Bind Sliders & Step Buttons
+        this.bindIbisColorSliders();
+
         // Wheel rendering & controls setup
         this.initColorWheelCanvas();
+      },
+
+      bindIbisColorSliders() {
+        const rSlider = document.getElementById('slider-r');
+        const gSlider = document.getElementById('slider-g');
+        const bSlider = document.getElementById('slider-b');
+
+        const updateRGBFromSliders = () => {
+          if (!rSlider || !gSlider || !bSlider) return;
+          const r = parseInt(rSlider.value) || 0;
+          const g = parseInt(gSlider.value) || 0;
+          const b = parseInt(bSlider.value) || 0;
+          const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+          App.currentColor = hex;
+          const colorPreview = document.getElementById('color-preview');
+          if (colorPreview) colorPreview.style.backgroundColor = hex;
+          const hexText = document.getElementById('ibis-hex-text');
+          if (hexText) hexText.textContent = hex.toUpperCase();
+
+          if (document.getElementById('val-r')) document.getElementById('val-r').textContent = r;
+          if (document.getElementById('val-g')) document.getElementById('val-g').textContent = g;
+          if (document.getElementById('val-b')) document.getElementById('val-b').textContent = b;
+        };
+
+        const hSlider = document.getElementById('slider-hue');
+        const satSlider = document.getElementById('slider-sat');
+        const valSlider = document.getElementById('slider-val');
+        const alphaSlider = document.getElementById('slider-alpha');
+
+        [rSlider, gSlider, bSlider].forEach(s => {
+          s?.addEventListener('input', updateRGBFromSliders);
+        });
+
+        if (hSlider) hSlider.addEventListener('input', (e) => { document.getElementById('val-hue').textContent = `${e.target.value}°`; });
+        if (satSlider) satSlider.addEventListener('input', (e) => { document.getElementById('val-sat').textContent = `${e.target.value}%`; });
+        if (valSlider) valSlider.addEventListener('input', (e) => { document.getElementById('val-val').textContent = `${e.target.value}%`; });
+        if (alphaSlider) alphaSlider.addEventListener('input', (e) => {
+          App.brushOpacity = parseInt(e.target.value) / 100;
+          document.getElementById('val-alpha').textContent = `${e.target.value}%`;
+          if (document.getElementById('brush-opacity-slider')) document.getElementById('brush-opacity-slider').value = e.target.value;
+          if (document.getElementById('brush-opacity-val')) document.getElementById('brush-opacity-val').textContent = `${e.target.value}%`;
+        });
+
+        // Step Buttons
+        document.getElementById('btn-r-minus')?.addEventListener('click', () => { if (rSlider) { rSlider.value = Math.max(0, parseInt(rSlider.value) - 5); updateRGBFromSliders(); } });
+        document.getElementById('btn-r-plus')?.addEventListener('click', () => { if (rSlider) { rSlider.value = Math.min(255, parseInt(rSlider.value) + 5); updateRGBFromSliders(); } });
+        document.getElementById('btn-g-minus')?.addEventListener('click', () => { if (gSlider) { gSlider.value = Math.max(0, parseInt(gSlider.value) - 5); updateRGBFromSliders(); } });
+        document.getElementById('btn-g-plus')?.addEventListener('click', () => { if (gSlider) { gSlider.value = Math.min(255, parseInt(gSlider.value) + 5); updateRGBFromSliders(); } });
+        document.getElementById('btn-b-minus')?.addEventListener('click', () => { if (bSlider) { bSlider.value = Math.max(0, parseInt(bSlider.value) - 5); updateRGBFromSliders(); } });
+        document.getElementById('btn-b-plus')?.addEventListener('click', () => { if (bSlider) { bSlider.value = Math.min(255, parseInt(bSlider.value) + 5); updateRGBFromSliders(); } });
+
+        document.getElementById('btn-alpha-minus')?.addEventListener('click', () => { if (alphaSlider) { alphaSlider.value = Math.max(0, parseInt(alphaSlider.value) - 5); alphaSlider.dispatchEvent(new Event('input')); } });
+        document.getElementById('btn-alpha-plus')?.addEventListener('click', () => { if (alphaSlider) { alphaSlider.value = Math.min(100, parseInt(alphaSlider.value) + 5); alphaSlider.dispatchEvent(new Event('input')); } });
       },
 
       initColorWheelCanvas() {
@@ -2712,6 +2799,25 @@
         reader.readAsText(file);
       }
     };
+
+    // Keyboard Shortcuts Handler
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      const key = e.key.toLowerCase();
+
+      if (e.ctrlKey || e.metaKey) {
+        if (key === 'z') { e.preventDefault(); Editor.undo(); }
+        else if (key === 'y') { e.preventDefault(); Editor.redo(); }
+      } else {
+        if (key === 'b') { App.currentTool = 'brush'; Editor.switchToBrushTool(); }
+        else if (key === 'e') { App.currentTool = 'eraser'; }
+        else if (key === 'f') { App.currentTool = 'fill'; }
+        else if (key === 't') { App.currentTool = 'transform'; }
+        else if (key === 's') { App.currentTool = 'select'; }
+        else if (key === 'c') { Editor.openColorPickerModal(); }
+        else if (e.code === 'Space') { e.preventDefault(); Editor.togglePlay(); }
+      }
+    });
 
     // Global Error Safeguard & Toast Notification System
     window.addEventListener('error', (e) => {
